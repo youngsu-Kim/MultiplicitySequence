@@ -1,7 +1,7 @@
 newPackage(
         "jMult",
-        Version => "0.5", 
-        Date => "Oct. 17, 2013",
+        Version => "0.6", 
+        Date => "Aug. 31, 2016",
         Authors => {
 	     {Name => "Youngsu Kim", 
                   Email => "youngsu.kim@ucr.edu", 
