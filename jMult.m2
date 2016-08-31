@@ -4,23 +4,30 @@ newPackage(
         Date => "Oct. 17, 2013",
         Authors => {
 	     {Name => "Youngsu Kim", 
-                  Email => "kim455@purdue.edu", 
+                  Email => "youngsu.kim@ucr.edu", 
                   HomePage => "https://sites.google.com/site/jmultiplicity/"}
 	     },
-        Headline => "computing j-Multiplicity of an ideal",
+        Headline => "computing j-Multiplicity and other related invariants of an ideal",
         DebuggingMode => true,
 	Reload => "false"
         )
 
-
+--------------------------
+-- Necessary packages
+--------------------------
 needsPackage "Polyhedra"
 needsPackage "Normaliz"
 
-
+--------------------------
+-- methods to be exported
+--------------------------
 export {jmult, grGr, egrGr, lengthij, length10ij,length11ij, cSubi, multSeq, mon2Exp, isBddFacet, pyrF, box, NP, monReduction, monjMult, gHilb
  }
 
 
+--------------------------
+-- gHilb 
+--------------------------
 gHilb = method()
 gHilb(ZZ, Ideal) := Module => (n, III) -> (
      RRR := ring III;
@@ -29,8 +36,9 @@ gHilb(ZZ, Ideal) := Module => (n, III) -> (
      HH^0( (In / Inp1) )
      )
 
-
----- extract the exponent of a monomial ideal
+--------------------------
+--- mon2Exp extracts the exponent of a monomial ideal as a vector
+--------------------------
 mon2Exp = method ()
 mon2Exp(Ideal) := Matrix => (III) -> (
      if ((isMonomialIdeal III) == false) then (print "The input is not a monomial ideal", break);
@@ -39,6 +47,9 @@ mon2Exp(Ideal) := Matrix => (III) -> (
      transpose (matrix flatten apply( for i from 0 to (n - 1) list J_i, exponents ))
      )
 
+--------------------------
+-- monReduction computes a minimal monomial reduction of a monomial ideal
+--------------------------
 monReduction = method()
 monReduction(Ideal) := Ideal => (I) -> (
      R := ring I;
@@ -50,8 +61,9 @@ monReduction(Ideal) := Ideal => (I) -> (
      trim J
      )
      
-     
---- from a matrix MMM extract the rows where all the entries are not zero
+--------------------------     
+--- from a matrix MMM isBddFacet extracts rows where all the entries are not zero
+--------------------------
 isBddFacet = method ()
 isBddFacet(ZZ, Matrix) := ZZ => (nnn, MMM) -> (
      --- rrr := rank target MMM; --- # of rows
@@ -61,7 +73,9 @@ isBddFacet(ZZ, Matrix) := ZZ => (nnn, MMM) -> (
      determinant matrix mutableM --- No if 0, Yes otherwise
      )
 
----- 
+--------------------------
+-- 
+--------------------------
 pyrF = method ()
 pyrF(Matrix) := Matrix => (FacetMatrix) -> (
      rrr := rank target FacetMatrix; --- # of rows
@@ -69,7 +83,9 @@ pyrF(Matrix) := Matrix => (FacetMatrix) -> (
      FacetMatrix | transpose map(ZZ^1, rrr, i -> 0)
      )
 
+--------------------------
 ---- gives a matrix of the from where all the entries are zero except one spot i,i
+--------------------------
 box = method ()
 box(ZZ,ZZ) := Matrix => (i,n) -> (
      MMM := mutableIdentity (ZZ,n);
@@ -77,17 +93,20 @@ box(ZZ,ZZ) := Matrix => (i,n) -> (
      matrix MMM
      )
 
+--------------------------
+-- NP computes the Newton polyhedron
+--------------------------
 NP = (II) -> (
      ddd := sub(dim ring II,ZZ);
      convexHull (mon2Exp II) + posHull (id_(ZZ^(ddd)))     
      )
 
 ---- monomial j-multiplicity
----- Dependency: loadPackage "Polyhedra", pryF, isBddFacet, mon2Exp, NP 
+---- Dependency: needsPackage "Polyhedra", pryF, isBddFacet, mon2Exp, NP 
 monjMult = method ()
 monjMult(Ideal) := ZZ => (III) -> (
      if ((isMonomialIdeal III) == false) then (print "The input is not a monomial ideal", break);     
-     II := III; --- unnecssary one one could change every II to III     
+     II := III; --- unnecssary, one could change every II to III     
      ddd := sub(dim ring II,ZZ);
      PPP := convexHull (mon2Exp II) + posHull (id_(ZZ^(ddd)));
      MMM := halfspaces PPP;
@@ -100,14 +119,18 @@ monjMult(Ideal) := ZZ => (III) -> (
      sub(monj, ZZ)
 )
 
-
+--------------------------
+-- multSeq computes the multiplicity sequence of an ideal
+--------------------------
 multSeq = method ()
 multSeq Ideal := List => (I) -> (
       for i from 0 to (dim ring I) list cSubi (i,I)
       )
 
 
-
+--------------------------
+-- 
+--------------------------
 cSubi = method ()
 cSubi (ZZ, Ideal) := ZZ => (i,I) -> (
      hilbertS := reduceHilbert hilbertSeries grGr I;
@@ -197,6 +220,10 @@ egrGr (Ideal) := ZZ => (I) -> (
      degree B
      )
 
+--------------------------
+-- jmult computes the j-multiplicity of an ideal following the method in Nishida-Ulrich. 
+-- The primary version of the code was writting by H. Schenk and J. Validashti.
+--------------------------
 jmult = method ()
 jmult (Ideal) := ZZ => (I) -> (
      	     if ((isIdeal I) == false) then (print "input is not an ideal", break);
@@ -217,6 +244,13 @@ jmult (Ideal) := ZZ => (I) -> (
              if (dim C == 0) then length (C^1) else print "analytic spread not maximal"	     
 	     )
 
+
+
+
+
+--------------------------
+-- Documentation
+--------------------------
 beginDocumentation()
 
 doc ///
