@@ -535,6 +535,52 @@ doc ///
  SeeAlso
 ///
 
+
+-- Test
+
+--test 0
+TEST ///
+kk=ZZ/32003
+R4=kk[a..d]
+R5=kk[a..e]
+R6=kk[a..f]
+M=coker genericMatrix(R6,a,2,3)
+pdim M
+
+G=map(R6,R5,{a+b+c+d+e+f,b,c,d,e})
+F=map(R5,R4,random(R5^1,R5^{4:-1}))
+
+P=pushFwd(M,G)
+assert (pdim P==1)
+
+Q=pushFwd(P,F)
+assert (pdim Q==0)
+///
+
+-- test 1
+TEST ///
+P3=QQ[a..d]
+M=comodule monomialCurveIdeal(P3,{1,2,3})
+
+P2=QQ[a,b,c]
+F=map(P3,P2,random(P3^1,P3^{-1,-1,-1}))
+N=pushFwd(M,F)
+
+assert(hilbertPolynomial M==hilbertPolynomial N)
+///
+
+-- test 2
+TEST ///
+kk = QQ
+R = kk[x,y]/(x^2-y^3-y^5)
+R' = integralClosure R
+pr = pushFwd map(R',R)
+q = pr_0 / (pr_0)_0
+use R
+assert(ann q==ideal(x,y))
+///
+
+
 end
 
 
