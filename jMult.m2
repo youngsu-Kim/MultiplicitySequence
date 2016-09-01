@@ -21,7 +21,7 @@ needsPackage "Normaliz"
 --------------------------
 -- methods to be exported
 --------------------------
-export {jmult, grGr, egrGr, lengthij, length10ij,length11ij, cSubi, multSeq, mon2Exp, isBddFacet, pyrF, box, NP, monReduction, monjMult, gHilb
+export {"jmult", "grGr", "egrGr", "lengthij", "length10ij","length11ij", "cSubi", "multSeq", "mon2Exp", "isBddFacet", "pyrF", "box", "NP", "monReduction", "monjMult", "gHilb"
  }
 
 
@@ -246,8 +246,6 @@ jmult (Ideal) := ZZ => (I) -> (
 
 
 
-
-
 --------------------------
 -- Documentation
 --------------------------
@@ -262,17 +260,19 @@ doc ///
    Text
     This package includes a few functions related the j-multiplicity and multiplicity sequence of an ideal. 
 --    The package contains the method "jmult" which computes the j-multiplicity of an ideal using Theorem 3.6 in Nishida-Ulrich (Computing j-multiplicities, J. of Alg 2010). 
-   Example
+  -- Example
  Caveat
     - The function jmult is based on the code written by H.Schenck and J. Validashti.	  
     
-    - The function monjMult comuputes the j-multiplicity for an monomial ideal by computing the volumn of the pyramid. This is a result of J. Jeffries and J. Montano, The $j$-Multiplicity of Monomial Ideals, to appear in Math. Res. Letters.
-
-
+    - The function monjMult comuputes the j-multiplicity for an monomial ideal by computing the volumn of the pyramid. 
+    This is a result of J. Jeffries and J. Montano, The $j$-Multiplicity of Monomial Ideals, to appear in Math. Res. Letters.
     
-    - The author thanks D. Eisenbud, D. Grayson, and M. Stillman for organizing a Macaulay2 day during the special year in commutative algebra 2012-2013 at MSRI where he learned how to write a package.
+    - The author thanks D. Eisenbud, D. Grayson, and M. Stillman for organizing a Macaulay2 day during 
+    the special year in commutative algebra 2012-2013 at MSRI where he learned how to write a package.
  SeeAlso
 ///
+
+
 
 doc ///
  Key 
@@ -536,50 +536,21 @@ doc ///
 ///
 
 
+
+TEST ///
+    assert ( firstFunction 2 == "D'oh!" )
+///
+
+end
+
+
 -- Test
 
 --test 0
 TEST ///
-kk=ZZ/32003
-R4=kk[a..d]
-R5=kk[a..e]
-R6=kk[a..f]
-M=coker genericMatrix(R6,a,2,3)
-pdim M
-
-G=map(R6,R5,{a+b+c+d+e+f,b,c,d,e})
-F=map(R5,R4,random(R5^1,R5^{4:-1}))
-
-P=pushFwd(M,G)
-assert (pdim P==1)
-
-Q=pushFwd(P,F)
-assert (pdim Q==0)
+kk = ZZ/2;
+assert (1+1==0);
 ///
-
--- test 1
-TEST ///
-P3=QQ[a..d]
-M=comodule monomialCurveIdeal(P3,{1,2,3})
-
-P2=QQ[a,b,c]
-F=map(P3,P2,random(P3^1,P3^{-1,-1,-1}))
-N=pushFwd(M,F)
-
-assert(hilbertPolynomial M==hilbertPolynomial N)
-///
-
--- test 2
-TEST ///
-kk = QQ
-R = kk[x,y]/(x^2-y^3-y^5)
-R' = integralClosure R
-pr = pushFwd map(R',R)
-q = pr_0 / (pr_0)_0
-use R
-assert(ann q==ideal(x,y))
-///
-
 
 end
 
