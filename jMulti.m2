@@ -1,14 +1,14 @@
 newPackage(
-        "jMult",
-        Version => "0.6", 
-        Date => "Aug. 31, 2016",
+        "jMulti",
+        Version => "0.7", 
+        Date => "Dec. 23, 2016",
         Authors => {
 	     {Name => "Youngsu Kim", 
                   Email => "youngsu.kim@ucr.edu", 
                   HomePage => "https://sites.google.com/site/jmultiplicity/"}
 	     },
         Headline => "computing j-Multiplicity and other related invariants of an ideal",
-        DebuggingMode => true,
+--        DebuggingMode => true,
 	Reload => "false"
         )
 
@@ -21,7 +21,23 @@ needsPackage "Normaliz"
 --------------------------
 -- methods to be exported
 --------------------------
-export {"jmult", "grGr", "egrGr", "lengthij", "length10ij","length11ij", "cSubi", "multSeq", "mon2Exp", "isBddFacet", "pyrF", "box", "NP", "monReduction", "monjMult", "gHilb"
+export {
+    "jmult", 
+--    "grGr", 
+--    "egrGr", 
+--    "lengthij", 
+--    "length10ij",
+--    "length11ij", 
+--    "cSubi", 
+    "multSeq", 
+--    "mon2Exp", 
+--    "isBddFacet", 
+--    "pyrF", 
+--    "box", 
+    "NP", 
+    "monReduction", 
+--    "gHilb",
+    "monjMult"
  }
 
 
@@ -55,6 +71,7 @@ monReduction(Ideal) := Ideal => (I) -> (
      R := ring I;
      P := NP (I);
      M := vertices P;
+     M = sub(M, ZZ);
      s := rank source M;
      J := ideal (0_R);
      for i from 0 to (s-1) do J = J + ideal R_((entries transpose M_{i})_0);
@@ -253,7 +270,7 @@ beginDocumentation()
 
 doc ///
  Key
-   "jMult"
+   "jMulti"
  Headline
    "Computing the j-Multiplicity of an ideal"
  Description
@@ -276,9 +293,10 @@ doc ///
 
 doc ///
  Key 
-   "jmult"
+   jmult
+   (jmult,Ideal)
  Headline
-   "Computing the j-multiplicity"
+   Computing the j-multiplicity
  Usage
    jmult(I)
  Inputs
@@ -319,36 +337,9 @@ doc ///
    Example
    	 R = QQ[x,y];
     	 I = ideal"x2,xy";
-    	 A = grGr I;
-	 describe A 
-	 hilbertSeries A
-   Code
-   Pre
- Caveat
- SeeAlso
-///
-
-doc ///
- Key 
-   "lengthij"
- Headline
-   "Comuting the length of the module $(m^i*I^j + I^{j+1}) / (m^(i+1)*I^j + I^{j+1})$"
- Usage
-   lengthij(i,j,I)
- Inputs
-   i: ZZ
-   j: ZZ
-   I:Ideal
- Outputs
-   :ZZ
-    The length of the module $(m^i*I^j + I^{j+1}) / (m^(i+1)*I^j + I^{j+1})$.
- Consequences
- Description
-   Text
-   Example
-   	 R = QQ[x,y];
-    	 I = ideal"x2,xy";
-    	 lengthij (2,3, I)
+--    	 A = grGr I;
+--	 describe A 
+--	 hilbertSeries A
    Code
    Pre
  Caveat
@@ -384,7 +375,8 @@ doc ///
 
 doc ///
  Key 
-   "multSeq"
+   multSeq
+   (multSeq,Ideal)
  Headline
    "Comuting the multiplicity sequence of an ideal"
  Usage
@@ -407,9 +399,62 @@ doc ///
  SeeAlso
 ///
 
+
 doc ///
  Key 
-   "monjMult"
+   monReduction
+   (monReduction,Ideal) 
+ Headline
+   "Computes the monomial minimal reduction of a monomial ideal"
+ Usage
+   monReduction I
+ Inputs
+   I: Ideal
+ Outputs
+   :Ideal
+    The monomial minimal reduction of I.
+ Consequences
+ Description
+   Text
+   Example
+   	 R = QQ[x,y];
+    	 I = ideal"x2,xy,y^2"
+    	 monReduction I
+   Code
+   Pre
+ Caveat
+ SeeAlso
+///
+
+doc ///
+ Key 
+   NP
+ Headline
+   "Computes the Newton Polyhedron for a monomial ideal"
+ Usage
+   NP I
+ Inputs
+   I: Ideal
+ Outputs
+   :Polyhedron
+    The Newton Polyhedron of the monomial I
+ Consequences
+ Description
+   Text
+   Example
+   	 R = QQ[x,y];
+    	 I = ideal"x2,xy,y^2";
+    	 NP I
+   Code
+   Pre
+ Caveat
+ SeeAlso
+///
+
+doc ///
+ Key 
+   monjMult
+   (monjMult,Ideal)
  Headline
    "Comuting the j-multiplicity of a ideal by computing the volumn of the pyramid of an ideal"
  Usage
@@ -432,131 +477,20 @@ doc ///
  SeeAlso
 ///
 
-doc ///
- Key 
-   "mon2Exp"
- Headline
-   "Obtaining the exponent vector of the generation set of a monomial ideal"
- Usage
-   mon2Exp I
- Inputs
-   I: Ideal
- Outputs
-   :Matrix
-    The matrix whose cloumns correspond to the exponents.
- Consequences
- Description
-   Text
-   Example
-   	 R = QQ[x,y];
-    	 I = ideal"x2,xy";
-    	 mon2Exp I
-   Code
-   Pre
- Caveat
- SeeAlso
-///
 
-doc ///
- Key 
-   "isBddFacet"
- Headline
-   "Checking if the halfspace determining the Newton Polyheron of an ideal I is a bounded facet"
- Usage
-   isBddFacet M
- Inputs
-   M: Matrix
- Outputs
-   :ZZ
-    0 if and only if unbounded facet
- Consequences
- Description
-   Text
-   Example
-   	 -- loadPackage "Polyhedra"
-	 needsPackage "Polyhedra"
-	 matrix {{0,2},{1,1}}
-	 convexHull oo
-	 -- P = convexHull transpose matrix {{0,2},{1,1}} + posHull (id_(ZZ^2))
-	 -- N = halfspaces P;
-	 -- for i from 0 to (rank target N_0) - 1 list isBddFacet (i, N_0)
-   Code
-   Pre
- Caveat
- SeeAlso
-///
-
-doc ///
- Key 
-   "box"
- Headline
-   "Constructing a square matrix where all the entries are zero except at one entry on the diagonal"
- Usage
-   box (i,n)
- Inputs
-   i : ZZ
-   n : ZZ
- Outputs
-   :Matrix
- Consequences
- Description
-   Text
-   Example
-   	 box (2,3)
-   Code
-   Pre
- Caveat
- SeeAlso
-///
-
-
-doc ///
- Key 
-   "pyrF"
- Headline
-   "Add the origion to a given vertex set"
- Usage
-   pyrF M
- Inputs
-   M: Matrix
- Outputs
-   :Matrix
-    Matrix with vertices
- Consequences
- Description
-   Text
-   Example
-   	 -- loadPackage "Polyhedra, Reload => true";
-	 M = transpose matrix {{0,2},{1,1}}
-	 pyrF M 	 
-   Code
-   Pre
- Caveat
- SeeAlso
-///
 
 
 
 TEST ///
-    assert ( firstFunction 2 == "D'oh!" )
+    assert ( 3+7 == 10 )
 ///
 
 end
 
 
--- Test
-
---test 0
 TEST ///
 kk = ZZ/2;
 assert (1+1==0);
 ///
 
 end
-
-
-
-
-
-
-
