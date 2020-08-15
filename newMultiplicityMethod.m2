@@ -26,8 +26,7 @@ J = ideal "x2+y3"
 -- expect 9
 multiplicityG I
 multiplicity sub(ideal vars R, R/I)
-multiplicityG sub(I,R)
 
 -- expect 2
 multiplicity sub(ideal vars R, R/J)
-multiplicityG sub(J,R) 
+multiplicityG J
