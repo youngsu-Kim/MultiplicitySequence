@@ -15,6 +15,7 @@ multiplicityG := (I)-> ( -- computes e(m, R/I)
     degree comodule primaryComponent (genRedIdeal,maxR) 
     )
 
+
 multiplicitySequence = method(Options => {Strategy => null})
 multiplicitySequence (ZZ, Ideal) := ZZ => opts -> (j, I) -> (
     R := ring I;
@@ -107,5 +108,11 @@ j = 4
     time primesIn21 // intersect;
     time saturate(idealIn21, saturate(idealIn21,oo)); -- possible to have embedded components, need to check if inner saturated ideal is unit ideal (e.g. j = 7 with I_2(5x2 generic))
     time if isHomogeneous oo then degree oo
+
+
+
+
+ a = 2;
+ 
 
 
