@@ -15,17 +15,19 @@ hilbertSamuelMultiplicity := (I)-> ( -- computes e(m, R/I)
     degree comodule primaryComponent (genRedIdeal,maxR) 
 )
 
-getGenElts = method(Options => {symbol minTerms => 1})
+getGenElts = method(Options => {symbol minTerms => 1, symbol numCandidates => 20})
 getGenElts (Ideal, ZZ) := List => opts -> (I, n) -> (
     G := flatten entries mingens I; -- I_*;
-    J := ideal(0_(ring I));
+    R := ring I;
+    J := ideal(0_R);
     result := {};
     for i from 1 to n do (
         foundNext := false;
         t := if i == n then 1 else opts.minTerms;
         while not foundNext and t <= #G do (
             if debugLevel > 0 then print("Trying" | (if t > 1 then " sums of " | toString(t) else "") | " generators of I");
-            cands := if t < 3 then random(subsets(G, t)/sum) else apply(10, i -> sum randomSubset(G, t));
+            cands := if t < 3 then random(subsets(G, t)/sum) 
+                else unique apply(opts.numCandidates, i -> (matrix{randomSubset(G, t)} *random(R^t, R^1))_(0,0));
             for c in cands do (
                 if codim(saturate(J, I) + ideal c) == i then (
                     result = append(result, c);
@@ -99,6 +101,15 @@ elapsedTime multiplicitySequence(codim I, I)
 elapsedTime multiplicitySequence(codim I, I, minTerms => 3)
 elapsedTime multiplicitySequence I
 elapsedTime multiplicitySequence(I, Strategy => "FullColon")
+elapsedTime multiplicitySequence(analyticSpread I, I, minTerms => numgens I - 1)
+
+l = analyticSpread I
+tally apply(100, i -> (remove(I.cache, "colonIdeals"); elapsedTime multiplicitySequence(l, I, minTerms => numgens I)))
+
+-- Monomial ideal, not generated in single degree
+R = QQ[x,y,z]
+I = ideal(x^2*y^2, y*z^2, x*z^2, z^3)
+getGenElts(I, l, minTerms => 3)
 
 -- Aug 21, 2020
 R = QQ[x_1..x_8]
@@ -155,3 +166,11 @@ j = 4
     time primesIn21 // intersect;
     time saturate(idealIn21, saturate(idealIn21,oo)); -- possible to have embedded components, need to check if inner saturated ideal is unit ideal (e.g. j = 7 with I_2(5x2 generic))
     time if isHomogeneous oo then degree oo
+
+
+(m,n) = (6,6)    
+R = QQ[x_0..x_(n-1),y_0..y_(m-1)]
+I = ideal flatten table(n,m,(i,j)->x_i*y_j)
+J1 = ideal apply(m,k-> sum(min(m-k,n),i->x_i*y_(k+i)));
+J2 = ideal apply(1..(n-1),k-> sum(min(n-k,m),i->x_(k+i)*y_i));
+J= J1+J2
