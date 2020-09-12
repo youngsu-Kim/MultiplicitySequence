@@ -15,7 +15,7 @@ hilbertSamuelMultiplicity := (I)-> ( -- computes e(m, R/I)
     degree comodule primaryComponent (genRedIdeal,maxR) 
 )
 
-getGenElts = method(Options => {symbol minTerms => 1, symbol numCandidates => 20})
+getGenElts = method(Options => {symbol minTerms => 1, symbol numCandidates => 10})
 getGenElts (Ideal, ZZ) := List => opts -> (I, n) -> (
     G := flatten entries mingens I; -- I_*;
     R := ring I;
@@ -23,7 +23,7 @@ getGenElts (Ideal, ZZ) := List => opts -> (I, n) -> (
     result := {};
     for i from 1 to n do (
         foundNext := false;
-        t := if i == n then 1 else opts.minTerms;
+        t := opts.minTerms;
         while not foundNext and t <= #G do (
             if debugLevel > 0 then print("Trying" | (if t > 1 then " sums of " | toString(t) else "") | " generators of I");
             cands := if t < 3 then random(subsets(G, t)/sum) 
