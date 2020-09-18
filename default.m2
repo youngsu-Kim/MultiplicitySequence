@@ -45,6 +45,7 @@ getGenElts (Ideal, ZZ) := List => opts -> (I, n) -> (
 
 multiplicitySequence = method(Options => options getGenElts ++ {Strategy => "DoubleSat"})
 multiplicitySequence (ZZ, Ideal) := ZZ => opts -> (j, I) -> (
+    I = trim I;
     c := codim I; -- dim R - dim I;
     l := analyticSpread I;
     if j < c then ( print "Requested index is less than codimension"; return; );
@@ -53,12 +54,14 @@ multiplicitySequence (ZZ, Ideal) := ZZ => opts -> (j, I) -> (
         (G, numTries) := ({}, 0);
         if debugLevel > 0 then print "Finding general elements...";
         while #G < l and numTries < 10 do (
-            try ( G = getGenElts(I, l, minTerms => opts.minTerms + numTries//3); );
+            try ( G = getGenElts(I, l, minTerms  => numgens I); );
             numTries = numTries + 1;
         );
         if #G < l then error "Could not find general elements. Consider running this function again, possibly with a higher value of minTerms (e.g. minTerms => 3)";
         if debugLevel > 0 then print "Finding colon ideals...";
-        candidates := apply(toList(c..l), i -> (i, saturate(ideal(G_{0..i-2}), I) + ideal(G#(i-1))));
+	candidates := apply(toList(max{c,2}..l), i -> (i, saturate(ideal(G_{0..i-2}), I) + ideal(G#(i-1))));
+	if c == 1 then candidates = prepend((1,ideal((ring I)_0-(ring I)_0)+ideal(G#(0))),candidates);
+--        candidates := apply(toList(c..l), i -> (i, saturate(ideal(G_{0..i-2}), I) + ideal(G#(i-1))));
         I.cache#"colonIdeals" = candidates;
     );
     colonIdeals := I.cache#"colonIdeals";
@@ -84,6 +87,9 @@ multiplicitySequence (ZZ, Ideal) := ZZ => opts -> (j, I) -> (
 )
 multiplicitySequence Ideal := Sequence => opts -> I -> apply(codim I..analyticSpread I, j -> multiplicitySequence(j, I, opts))
 
+indexedMultiplicitySequence = method(Options => options multiplicitySequence)
+indexedMultiplicitySequence Ideal := Sequence => opts -> I -> hashTable toList apply(codim I..analyticSpread I, j -> {j, multiplicitySequence(j, I, opts)})
+
 randomSubset = method()
 randomSubset (List, ZZ) := List => (L, k) -> (
     i := random(#L);
@@ -92,10 +98,31 @@ randomSubset (List, ZZ) := List => (L, k) -> (
 
 end--
 
+restart
 load "default.m2"
 needsPackage "MinimalPrimes"
 installMinprimes()
-debugLevel = 1
+--debugLevel = 0
+
+
+
+R = QQ[x,y];
+I = ideal" x5y9, x6y5,  x8y4";
+indexedMultiplicitySequence I
+
+
+
+
+R = QQ[x,y]
+
+I = ideal" x5y9, x6y5,  x8y4, x6y10"
+
+for i from codim I  to analyticSpread I do(
+    <<endl<< "i = "<<i<<" c_i = "<< multiplicitySequence(i, I)<<", "
+    )
+
+
+
 
 elapsedTime multiplicitySequence(codim I, I)
 elapsedTime multiplicitySequence(codim I, I, minTerms => 3)
@@ -174,3 +201,58 @@ I = ideal flatten table(n,m,(i,j)->x_i*y_j)
 J1 = ideal apply(m,k-> sum(min(m-k,n),i->x_i*y_(k+i)));
 J2 = ideal apply(1..(n-1),k-> sum(min(n-k,m),i->x_(k+i)*y_i));
 J= J1+J2
+
+
+
+ R = QQ[x,y,z]
+ I = ideal"xyz2"*ideal(z^3, y*z^2, x*z^2, x^2*y^2)
+
+
+for i from codim I  to analyticSpread I do(
+    <<endl<< "i = "<<i<<" c_i = "<< multiplicitySequence(i, I)<<", "
+    )
+
+
+ R = QQ[x,y,z]
+ I = ideal(z^3,  y*z^2, x*z^2)
+
+for i from codim I  to analyticSpread I do(
+    <<endl<< "i = "<<i<<" c_i = "<< multiplicitySequence(i, I)<<", "
+    )
+
+
+
+
+
+
+ R = QQ[x,y,z]
+ I = ideal(x*y^3*z^3, x^3*y)
+
+
+for i from codim I  to analyticSpread I do(
+    <<endl<< "i = "<<i<<" c_i = "<< multiplicitySequence(i, I)<<", "
+    )
+
+
+analyticSpread I
+numgens I
+
+
+ R = QQ[x,y,z]
+ I = ideal"xyz3, x2y2z, xy2z2, xy2z4x"
+
+
+for i from codim I  to analyticSpread I do(
+    <<endl<< "i = "<<i<<" c_i = "<< multiplicitySequence(i, I)<<", "
+    )
+
+
+R = QQ[x,y,z]
+
+I = ideal" x4y2,  x2yz3"
+
+for i from codim I  to analyticSpread I do(
+    <<endl<< "i = "<<i<<" c_i = "<< multiplicitySequence(i, I)<<", "
+    )
+
+
