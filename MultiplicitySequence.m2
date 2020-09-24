@@ -120,9 +120,9 @@ box(ZZ,ZZ) := Matrix => (i,n) -> (
      )
 
 NP = method ()
-NP(Ideal) := Polyhedron (II) -> (
-     -- ddd := sub(dim ring II,ZZ);
-     convexHull (mon2Exp II) + posHull (id_(ZZ^(sub(dim ring II,ZZ))))     
+NP(Ideal) := Polyhedron => (I) -> (
+     -- ddd := sub(dim ring I,ZZ);
+     convexHull (mon2Exp I) + posHull (id_(ZZ^(sub(dim ring I,ZZ))))     
      )
 
 ---- monomial j-multiplicity
@@ -153,7 +153,6 @@ multSeq = method ()
 multSeq Ideal := List => (I) -> (
       for i from 0 to (dim ring I) list cSubi (i,I)
       )
-
 
 
 cSubi = method ()
@@ -207,6 +206,7 @@ length11ij (ZZ,ZZ, Ideal) := ZZ => (i,j,I) -> (
 
 grGr = method ()
 grGr (Ideal) := Ring => (I) -> (
+     if I.cache#?"gr_mGr_I" then return I.cache#"gr_mGr_I";
      R := ring I;
      m := ideal vars R;
      n := numgens I;
@@ -230,11 +230,10 @@ grGr (Ideal) := Ring => (I) -> (
      phi2 := map(R2, reesRingm, vars R2);
      mG1R2 := phi2 sub(mG1, reesRingm);
      K2R2 := phi2 K2;
-     TTT := R2 / (mG1R2 + K2R2);
-     -- modification of TTT to have the right degrees
-     (TT, map3) := flattenRing TTT; 
-     TT
-     --minimalPresentation TT
+     -- T := R2 / (mG1R2 + K2R2); 
+     -- modification of T to have the right degrees
+     I.cache#"gr_mGr_I" = first flattenRing (R2 / (mG1R2 + K2R2))
+     --minimalPresentation T
      -- hilbertSeries oo
 )
 
@@ -671,7 +670,7 @@ elapsedTime isReduction (I,J)
 elapsedTime grGr I
 
 end
-loadPackage ("jMult", Reload=>true)
+loadPackage "MultiplicitySequence" --("MultiplicitySequence", Reload=>true)
 needsPackage "MinimalPrimes"
 installMinprimes()
 
@@ -680,3 +679,33 @@ I = ideal "x2y,xy2" -- jmult 3
 monjMult I
 jmult I
 indexedMultiplicitySequence I
+
+-- Monomial ideal, not generated in single degree
+R = QQ[x,y,z]
+I = ideal(x^2*y^2, y*z^2, x*z^2, z^3) -- Weird minimal presentation with grGr I
+getGenElts(I, l, minTerms => 3)
+
+-- Aug 21, 2020
+R = QQ[x_1..x_8]
+M = genericMatrix(R,4,2)
+I = minors(2, M)
+
+R = ZZ/31[x_1..x_10]; M = genericMatrix(R,5,2)
+R = QQ[x_1..x_9]; M = genericMatrix(R,3,3)
+
+--
+R = QQ[x,y,z]
+I = ideal"xyz2"*ideal(z^3, y*z^2, x*z^2, x^2*y^2)
+
+R = QQ[x,y,z]
+I = ideal(z^3,  y*z^2, x*z^2)
+
+R = QQ[x,y,z]
+I = ideal(x*y^3*z^3, x^3*y)
+
+R = QQ[x,y,z]
+I = ideal"xyz3, x2y2z, xy2z2, xy2z4x"
+
+R = QQ[x,y,z]
+I = ideal" x4y2,  x2yz3"
+
