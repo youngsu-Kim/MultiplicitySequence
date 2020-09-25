@@ -47,7 +47,6 @@ export {"jmult",
     "hilbertSamuelMultiplicity",
     "getGenElts",
     "multiplicitySequence",
-    "indexedMultiplicitySequence",
     "randomSubset",
     "numCandidates",
     "minTerms"
@@ -151,7 +150,7 @@ monjMult(Ideal) := ZZ => (III) -> (
 
 multSeq = method ()
 multSeq Ideal := List => (I) -> (
-      for i from 0 to (dim ring I) list cSubi (i,I)
+      hashTable for i from codim I to analyticSpread I list (i, cSubi (i,I))
       )
 
 
@@ -170,15 +169,15 @@ cSubi (ZZ, Ideal) := ZZ => (i,I) -> (
      powerFirVar := (degree botP)_0;     
      powerSecVar := (degree botP)_1;     
      d := dim ring I;
-     a := powerFirVar - i;
-     b := powerSecVar - (d-i);
+     a := powerFirVar - (d - i);
+     b := powerSecVar - i;
      c := topP;
      for i from 1 to a do (c = diff( firVar, c));
      c = sub (c, firVar => 1);
      for i from 1 to b do (c = diff (secVar, c));
      c = sub (c, secVar => 1); 
      c = c*(-1)^(a+b);
-     if (c <= 0 or a < 0 or b < 0) then 0 else (sub(c,ZZ) / (a! * b!))
+     if (c <= 0 or a < 0 or b < 0) then 0 else (sub(c,ZZ) // (a! * b!))
 )
 
 lengthij = method ()
@@ -272,9 +271,10 @@ jmult (Ideal) := ZZ => (I) -> (
 -- Patching
 hilbertSamuelMultiplicity := (I)-> ( -- computes e(m, R/I)
     R := (ring I)/I;
+    k := coefficientRing ring I;
     maxR := ideal vars R;
     if (dim R == 0) then return (degree comodule primaryComponent (I, maxR)); -- finite colength case; 
-    genLinComMat := (gens maxR) * random (ZZ^(numgens maxR), ZZ^(dim R));
+    genLinComMat := (gens maxR) * random (k^(numgens maxR), k^(dim R));
     colInGenLinComMat := numcols genLinComMat;
     genRedIdeal := ideal (0_R);
     if (dim R == 1) then genRedIdeal = saturate (ideal (0_R), maxR) + ideal genLinComMat  -- the case of dim R/I = 1
@@ -283,7 +283,7 @@ hilbertSamuelMultiplicity := (I)-> ( -- computes e(m, R/I)
     -- if (codim genRedIdeal != dim R) then return "Elements chosen are not general. Try again."; 
     -- use ring I;
     -- the length method doesn't handle the non-graded case, but the degree function does.
-    degree comodule primaryComponent (genRedIdeal,maxR) 
+    degree normalCone primaryComponent (genRedIdeal,maxR) 
 )
 
 getGenElts = method(Options => {symbol minTerms => 1, symbol numCandidates => 10})
@@ -297,8 +297,9 @@ getGenElts (Ideal, ZZ) := List => opts -> (I, n) -> (
         t := opts.minTerms;
         while not foundNext and t <= #G do (
             if debugLevel > 0 then print("Trying" | (if t > 1 then " sums of " | toString(t) else "") | " generators of I");
-            cands := if t < 3 then random(subsets(G, t)/sum) 
-                else unique apply(opts.numCandidates, i -> (matrix{randomSubset(G, t)} *random(R^t, R^1))_(0,0));
+            -- cands := if t < 2 then random(subsets(G, t)/sum) 
+                -- else unique apply(opts.numCandidates, i -> (matrix{randomSubset(G, t)} *random(R^t, R^1))_(0,0));
+            cands := unique apply(opts.numCandidates, i -> (matrix{randomSubset(G, t)} *random(R^t, R^1))_(0,0));
             for c in cands do (
                 if codim(saturate(J, I) + ideal c) == i then (
                     result = append(result, c);
@@ -330,36 +331,24 @@ multiplicitySequence (ZZ, Ideal) := ZZ => opts -> (j, I) -> (
         );
         if #G < l then error "Could not find general elements. Consider running this function again, possibly with a higher value of minTerms (e.g. minTerms => 3)";
         if debugLevel > 0 then print "Finding colon ideals...";
-	candidates := apply(toList(max{c,2}..l), i -> (i, saturate(ideal(G_{0..i-2}), I) + ideal(G#(i-1))));
-	if c == 1 then candidates = prepend((1,ideal((ring I)_0-(ring I)_0)+ideal(G#(0))),candidates);
---        candidates := apply(toList(c..l), i -> (i, saturate(ideal(G_{0..i-2}), I) + ideal(G#(i-1))));
+        candidates := apply(toList(max{c,2}..l), i -> (i, saturate(ideal(G_{0..i-2}), I) + ideal(G#(i-1))));
+        if c == 1 then candidates = prepend((1,saturate(ideal(0_(ring I)), I)+ideal(G#(0))),candidates);
         I.cache#"colonIdeals" = candidates;
     );
     colonIdeals := I.cache#"colonIdeals";
     idealIn21 := ((select (colonIdeals, i-> i_0 == j))_0)_1;
+    -- if dim(idealIn21 + I) < dim R - j
     if debugLevel > 0 then print "Computing minimal primes...";
-    if isHomogeneous I then (
-        K := if opts.Strategy == "DoubleSat" then (
-            saturate(idealIn21, intersect minimalPrimes(idealIn21+I))
-        ) else if opts.Strategy == "FullColon" then (
-            primesIn21 := select(minimalPrimes(idealIn21), p -> not isSubset(I, p));
-            if #primesIn21 > 0 then intersect primesIn21 else ideal(0_(ring I)) -- todo: check
-        );
-        if debugLevel > 0 then print "Computing saturation...";
-        J := if K == 0 then idealIn21 else saturate(idealIn21, K); -- todo: check
-        if debugLevel > 0 then print "Finding degree...";
-        degree J
-    ) else (
-        minPrimesOfColonIdeals := apply(colonIdeals, s -> (s#0, minimalPrimes(I+s#1)));
-        primesIn21 = ((select(minPrimesOfColonIdeals, i-> i_0 == j))_0)_1;
-        if debugLevel > 0 then print "Finding degree via general elements...";
-        sum apply(primesIn21, p -> hilbertSamuelMultiplicity localize(idealIn21, p))
-    )
+    primesIn21 := select(minimalPrimes(idealIn21), p -> not isSubset(I, p));
+    K := if #primesIn21 > 0 then intersect primesIn21 else ideal(0_(ring I));
+    if debugLevel > 0 then print "Computing saturation...";
+    J := if K == 0 then idealIn21 else saturate(idealIn21, K);
+    if debugLevel > 0 then print "Finding degree...";
+    -- if isHomogeneous J then degree J else hilbertSamuelMultiplicity J
+    -- if isHomogeneous J then degree J else ( A := (ring J)/J; (elapsedTime degree tangentCone J, elapsedTime degree normalCone ideal gens A) )
+    if isHomogeneous J then degree J else degree tangentCone J
 )
-multiplicitySequence Ideal := Sequence => opts -> I -> apply(codim I..analyticSpread I, j -> multiplicitySequence(j, I, opts))
-
-indexedMultiplicitySequence = method(Options => options multiplicitySequence)
-indexedMultiplicitySequence Ideal := Sequence => opts -> I -> hashTable toList apply(codim I..analyticSpread I, j -> {j, multiplicitySequence(j, I, opts)})
+multiplicitySequence Ideal := Sequence => opts -> I -> hashTable toList apply(codim I..analyticSpread I, j -> {j, multiplicitySequence(j, I, opts)})
 
 randomSubset = method()
 randomSubset (List, ZZ) := List => (L, k) -> (
@@ -678,7 +667,7 @@ R = QQ[x,y]
 I = ideal "x2y,xy2" -- jmult 3 
 monjMult I
 jmult I
-indexedMultiplicitySequence I
+elapsedTime multiplicitySequence I
 
 -- Monomial ideal, not generated in single degree
 R = QQ[x,y,z]
@@ -696,16 +685,21 @@ R = QQ[x_1..x_9]; M = genericMatrix(R,3,3)
 --
 R = QQ[x,y,z]
 I = ideal"xyz2"*ideal(z^3, y*z^2, x*z^2, x^2*y^2)
-
-R = QQ[x,y,z]
 I = ideal(z^3,  y*z^2, x*z^2)
-
-R = QQ[x,y,z]
 I = ideal(x*y^3*z^3, x^3*y)
-
-R = QQ[x,y,z]
 I = ideal"xyz3, x2y2z, xy2z2, xy2z4x"
-
-R = QQ[x,y,z]
 I = ideal" x4y2,  x2yz3"
+I = ideal "x4z, y3z"
+I = ideal "xz, yz"
 
+S = R/I
+J = ideal z
+multiplicitySequence(1, J)
+
+R = QQ[x,y,z,w]
+I = ideal "x3,y4,z5" * ideal "w"
+multSeq I
+multiplicitySequence I
+
+A = R/idealIn21
+degree normalCone(ideal gens A)
