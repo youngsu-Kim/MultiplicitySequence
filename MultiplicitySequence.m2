@@ -40,7 +40,8 @@ export {
     "multiplicitySequence",
     "randomSubset",
     "numCandidates",
-    "minTerms"
+    "minTerms",
+    "monAnalyticSpread"
  }
 
 installMinprimes() -- for MinimalPrimes.m2
@@ -113,6 +114,29 @@ NP Ideal := Polyhedron => I -> (
     convexHull (mon2Exp I) + posHull (id_(ZZ^(sub(dim ring I,ZZ))))     
 )
 
+monAnalyticSpread = method()
+monAnalyticSpread MonomialIdeal := MonomialIdeal => I -> (
+    d := dim ring I;
+    P := NP(I);
+    M := halfspaces P;
+    Mm := M_0;
+    Mv := M_1;
+    r := rank target Mm;  --- # of rows
+    -- s := rank source Mm;  --- # of columns
+    monAS := 0;
+    for p from 0 to r-1 do (
+        face := intersection (Mm, Mv, Mm^{p}, Mv^{p});
+        monAS = max(monAS,dim convexHull vertices face);      
+    );
+    sub(monAS, ZZ)+1
+)
+monAnalyticSpread Ideal := MonomialIdeal => I -> (
+    J := monomialIdeal I;
+    if J != I then error "Expected a monomial ideal";
+    monAnalyticSpread J
+)
+
+
 ---- monomial j-multiplicity
 ---- Dependency: loadPackage "Polyhedra", pryF, isBddFacet, mon2Exp, NP 
 monjMult = method()
@@ -120,7 +144,7 @@ monjMult MonomialIdeal := ZZ => I -> (
     -- if ((isMonomialIdeal III) == false) then (print "The input is not a monomial ideal", break);
     -- II := III; --- unnecssary one one could change every II to III
     d := dim ring I;
-    P := convexHull(mon2Exp I) + posHull(id_(ZZ^(d)));
+    P := NP(I);
     M := halfspaces P;
     Mm := M_0;
     Mv := M_1;
@@ -129,8 +153,8 @@ monjMult MonomialIdeal := ZZ => I -> (
     monj := 0;
     for p from 0 to r-1 do (
     if isBddFacet(p, Mm) then (
-        halfSpace := intersection (Mm, Mv, Mm^{p}, Mv^{p});
-        monj = monj + (d!)*(volume convexHull pyrF(vertices halfSpace));
+        face := intersection (Mm, Mv, Mm^{p}, Mv^{p});
+        monj = monj + (d!)*(volume convexHull pyrF(vertices face));
         );
     );
     sub(monj, ZZ)
@@ -522,7 +546,8 @@ undocumented {
     "getGenElts",
     "randomSubset",
     "numCandidates",
-    "minTerms"
+    "minTerms",
+     "monAnaltyticSpread"
  }
 
 end--
@@ -580,6 +605,10 @@ I = ideal"xyz3, x2y2z, xy2z2, xy2z4x"
 I = ideal" x4y2,  x2yz3"
 I = ideal "x4z, y3z"
 I = ideal "xz, yz"
+
+I = ideal "x,y,z"
+
+(monAnalyticSpread I, analyticSpread I)
 
 S = R/I
 J = ideal z
