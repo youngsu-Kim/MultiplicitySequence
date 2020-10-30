@@ -1,7 +1,7 @@
 newPackage(
     "MultiplicitySequence",
     Version => "0.1", 
-    Date => "Sep. 22, 2020",
+    Date => "Oct. 14, 2020",
     Authors => {
         {Name => "Justin Chen", 
             Email => "justin.chen@math.gatech.edu"
@@ -53,10 +53,10 @@ gHilb (ZZ, MonomialIdeal) := Module => (n, I) -> (
     In := sub((intclMonIdeal trim I^n)_0, R  );
     HH^0( (In / Inp1) )
 )
-gHilb (ZZ, Ideal) := MonomialIdeal => I -> (
+gHilb (ZZ, Ideal) := Module => (n, I) -> ( 
     J := monomialIdeal I;
     if J != I then error "Expected a monomial ideal";
-    gHilb J
+    gHilb (n, J)
 )
 
 ---- extract the exponent of a monomial ideal
@@ -109,9 +109,14 @@ box := (i,n) -> (
 )
 
 NP = method()
-NP Ideal := Polyhedron => I -> (
+NP MonomialIdeal := Polyhedron => I -> (
     -- ddd := sub(dim ring I,ZZ);
     convexHull (mon2Exp I) + posHull (id_(ZZ^(sub(dim ring I,ZZ))))     
+)
+NP Ideal := Polyhedron => I -> (
+    J := monomialIdeal I;
+    if J != I then error "Expected a monomial ideal";
+    NP J
 )
 
 monAnalyticSpread = method()
@@ -538,10 +543,77 @@ doc ///
             monjMult (I)
     SeeAlso
 ///
+
+doc ///
+    Key
+        NP
+        (NP, Ideal)
+	--(NP, MonomialIdeal)
+    Headline
+        the Newton-Polyhedron of a mominial ideal
+    Usage
+        NP(I)
+    Inputs
+        I:Ideal
+    Outputs
+        :Polyhedron
+            The Newton-Polyhedron of the monomial ideal I
+    Description
+        Text
+        Example
+            R = QQ[x,y]
+            I = ideal"x2,xy"
+            NP I
+///
+
+doc ///
+    Key
+        monReduction
+        (monReduction, Ideal)
+	(monReduction, MonomialIdeal)
+    Headline
+        The minimal monomial reduction of a monomial ideal
+    Usage
+        monReduction(I)
+    Inputs
+        I:MonomialIdeal
+    Outputs
+        :MonomialIdeal
+            The minimal monomial of reduction of a monomial ideal I
+    Description
+        Text
+        Example
+            R = QQ[x,y]
+            monReduction (ideal vars R)^2
+///
+
+doc ///
+    Key
+        gHilb
+	(gHilb, ZZ, MonomialIdeal)
+	(gHilb, ZZ, Ideal)
+    Headline
+        The length of the module ??
+    Usage
+        gHilb(n,I)
+    Inputs
+        n:ZZ
+	I:MonomialIdeal
+    Outputs
+        :ZZ
+            The length of the module ??
+    Description
+        Text
+        Example
+            R = QQ[x,y]
+            I = ideal "x2,y2"
+	    gHilb(2,I)
+///
+
 undocumented {
-    "NP",
-    "monReduction",
-    "gHilb",
+    --"NP",
+    --"monReduction",
+    --"gHilb",
     "hilbertSamuelMultiplicity",
     "getGenElts",
     "randomSubset",
