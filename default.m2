@@ -113,6 +113,7 @@ indexedMultiplicitySequence I
 
 
 
+
 R = QQ[x,y]
 
 I = ideal" x5y9, x6y5,  x8y4, x6y10"

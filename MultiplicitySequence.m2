@@ -46,189 +46,45 @@ export {
 
 installMinprimes() -- for MinimalPrimes.m2
 
-gHilb = method()
-gHilb (ZZ, MonomialIdeal) := Module => (n, I) -> (
+
+randomSubset = method()
+randomSubset (List, ZZ) := List => (L, k) -> (
+    i := random(#L);
+    if k == 1 then {L#i} else {L#i} | randomSubset(L_(delete(i, toList(0..<#L))), k-1)
+)
+
+getGenElts = method(Options => {symbol minTerms => -1, symbol numCandidates => 3})
+getGenElts (Ideal, ZZ) := List => opts -> (I, n) -> (
+    G := flatten entries mingens I; -- I_*;
     R := ring I;
-    Inp1 := sub((intclMonIdeal trim I^(n+1))_0 , R );
-    In := sub((intclMonIdeal trim I^n)_0, R  );
-    HH^0( (In / Inp1) )
-)
-gHilb (ZZ, Ideal) := Module => (n, I) -> ( 
-    J := monomialIdeal I;
-    if J != I then error "Expected a monomial ideal";
-    gHilb (n, J)
-)
-
----- extract the exponent of a monomial ideal
-mon2Exp = method()
-mon2Exp MonomialIdeal := Matrix => I -> (
-    -- J := trim I;
-    -- n := numgens J;
-    -- transpose (matrix flatten apply( for i from 0 to (n - 1) list J_i, exponents ))
-    transpose matrix flatten apply(I_*, exponents)
-)
-mon2Exp Ideal := Matrix => I -> (
-    J := monomialIdeal I;
-    if J != I then error "Expected a monomial ideal";
-    mon2Exp monomialIdeal I
-)
-
-monReduction = method()
-monReduction MonomialIdeal := MonomialIdeal => I -> (
-    -- R := ring I;
-    -- P := NP (I);
-    -- M := vertices P;
-    -- s := rank source M;
-    -- J := ideal (0_R);
-    -- for i from 0 to (s-1) do J = J + ideal R_((entries transpose M_{i})_0);
-    -- trim J
-    sum(entries transpose sub(vertices NP I, ZZ), e -> monomialIdeal((ring I)_e))
-)
-monReduction Ideal := MonomialIdeal => I -> (
-    J := monomialIdeal I;
-    if J != I then error "Expected a monomial ideal";
-    monReduction J
-)
-
---- from a matrix M extract the rows where all the entries are not zero
-isBddFacet := (n, M) -> (
-    --- r := rank target M; --- # of rows
-    s := rank source M; --- # of columns
-    mutableM := mutableIdentity (ZZ,s); --- row as a vector
-    for i from 0 to (s - 1) do (mutableM_(i,i) = M_(n,i));
-    det mutableM != 0 --- No if 0, Yes otherwise
-)
-
-pyrF := M -> M | transpose map(ZZ^1, rank target M, 0)
-
----- gives a matrix of the from where all the entries are zero except one spot i,i
-box := (i,n) -> (
-    M := mutableIdentity (ZZ,n);
-    for r from 0 to (n-1) do if ( r != (i-1)) then M_(r,r) = 0;
-    matrix M
-)
-
-NP = method()
-NP MonomialIdeal := Polyhedron => I -> (
-    -- ddd := sub(dim ring I,ZZ);
-    convexHull (mon2Exp I) + posHull (id_(ZZ^(sub(dim ring I,ZZ))))     
-)
-NP Ideal := Polyhedron => I -> (
-    J := monomialIdeal I;
-    if J != I then error "Expected a monomial ideal";
-    NP J
-)
-
-monAnalyticSpread = method()
-monAnalyticSpread MonomialIdeal := MonomialIdeal => I -> (
-    d := dim ring I;
-    P := NP(I);
-    M := halfspaces P;
-    Mm := M_0;
-    Mv := M_1;
-    r := rank target Mm;  --- # of rows
-    -- s := rank source Mm;  --- # of columns
-    monAS := 0;
-    for p from 0 to r-1 do (
-        face := intersection (Mm, Mv, Mm^{p}, Mv^{p});
-        monAS = max(monAS,dim convexHull vertices face);      
-    );
-    sub(monAS, ZZ)+1
-)
-monAnalyticSpread Ideal := MonomialIdeal => I -> (
-    J := monomialIdeal I;
-    if J != I then error "Expected a monomial ideal";
-    monAnalyticSpread J
-)
-
-
----- monomial j-multiplicity
----- Dependency: loadPackage "Polyhedra", pryF, isBddFacet, mon2Exp, NP 
-monjMult = method()
-monjMult MonomialIdeal := ZZ => I -> (
-    -- if ((isMonomialIdeal III) == false) then (print "The input is not a monomial ideal", break);
-    -- II := III; --- unnecssary one one could change every II to III
-    d := dim ring I;
-    P := NP(I);
-    M := halfspaces P;
-    Mm := M_0;
-    Mv := M_1;
-    r := rank target Mm;  --- # of rows
-    -- s := rank source Mm;  --- # of columns
-    monj := 0;
-    for p from 0 to r-1 do (
-    if isBddFacet(p, Mm) then (
-        face := intersection (Mm, Mv, Mm^{p}, Mv^{p});
-        monj = monj + (d!)*(volume convexHull pyrF(vertices face));
+    J := ideal(0_R);
+    result := {};
+    for i from 1 to n do (
+        foundNext := false;
+        t := if opts.minTerms < 0 then #G else opts.minTerms;
+        while not foundNext and t <= #G do (
+            if debugLevel > 0 then print("Trying" | (if t > 1 then " sums of " | toString(t) else "") | " generators of I");
+            cands := unique apply(opts.numCandidates, i -> (matrix{randomSubset(G, t)} *random(R^t, R^1))_(0,0));
+            for c in cands do (
+                if codim(saturate(J, I) + ideal c) == i then (
+                    result = append(result, c);
+                    if member(c, G) then G = delete(c, G);
+                    foundNext = true;
+                    break;
+                );
+            );
+            t = t+1;
         );
+        if foundNext then J = ideal result else error "Could not find general element. Consider running this function again, e.g. with a higher value of minTerms";
     );
-    sub(monj, ZZ)
-)
-monjMult Ideal := ZZ => I -> (
-    J := monomialIdeal I;
-    if J != I then error "Expected a monomial ideal";
-    monjMult J
+    result
 )
 
--- multSeq = method()
--- multSeq Ideal := List => I -> (
-    -- hashTable for i from codim I to analyticSpread I list (i, cSubi (i,I))
--- )
 
--- lengthij, length10ij, length11ij do not seem to be used elsewhere, and have been commented out
--- lengthij = method()
--- lengthij (ZZ, ZZ, Ideal) := ZZ => (i,j,I) -> (
-    -- R := ring I;
-    -- m := ideal vars R;
-    -- M := (trim (m^i*I^j + I^(j+1)) ) / (  trim (m^(i+1)*I^j + I^(j+1)) );
-    -- degree (M^1)
--- )
 
--- length10ij = method()
--- length10ij (ZZ, ZZ, Ideal) := ZZ => (i,j,I) -> (
-    -- R := ring I;
-    -- m := ideal vars R;
-    -- M := (trim (I^j ) ) / (  trim (m^(i+1)*I^j + I^(j+1)) );
-    -- degree (M^1)
--- )
 
--- length11ij = method()
--- length11ij (ZZ,ZZ, Ideal) := ZZ => (i,j,I) -> (
-    -- L := 0;
-    -- for k from 0 to j do (L = L + length10ij(i,k,I));
-    -- sub (L, ZZ)
--- )
 
-cSubi = method()
-cSubi (ZZ, Ideal) := ZZ => (i,I) -> (
-    G := grGr I;
-    if not G.cache#?"hilbertSeries" then G.cache#"hilbertSeries" = hilbertSeries(G, Reduce => true);
-    hS := G.cache#"hilbertSeries";
-    -- hilbertS := reduceHilbert hilbertSeries G;
-    poinP := numerator hS;
-    dPoinP := denominator hS;
-    A := ring poinP;
-    -- B := newRing (A, Degrees => {{1,0}, {0,1},{0,0}});
-    B := newRing (A, Degrees => {{1,0}, {0,1}});
-    use B;
-    topP := sub (poinP, B);
-    botP := value toString dPoinP;
-    firVar := (ultimate (flatten, entries (vars B)_{0}))_0;
-    secVar := (ultimate (flatten, entries (vars B)_{1}))_0;
-    powerFirVar := (degree botP)_0;     
-    powerSecVar := (degree botP)_1;     
-    d := dim ring I;
-    a := powerFirVar - (d - i);
-    b := powerSecVar - i;
-    c := topP;
-    for i from 1 to a do (c = diff( firVar, c));
-    c = sub (c, firVar => 1);
-    for i from 1 to b do (c = diff (secVar, c));
-    c = sub (c, secVar => 1); 
-    c = c*(-1)^(a+b);
-    if (c <= 0 or a < 0 or b < 0) then 0 else (sub(c,ZZ) // (a! * b!))
-)
-
+-- computes the bigraded associated graded algebra with respect to m and I
 grGr = method()
 grGr Ideal := Ring => I -> (
     if I.cache#?"gr_mGr_I" then I.cache#"gr_mGr_I" else I.cache#"gr_mGr_I" = (
@@ -264,82 +120,72 @@ grGr Ideal := Ring => I -> (
     )
 )
 
-egrGr = method()
-egrGr Ideal := ZZ => I -> (
-    A := grGr I;
-    B := newRing (A, Degrees => splice{ (#gens A) : 1});
-    degree B
+
+-- auxiliary method that computes the multiplicity sequence via Hilbert functions
+cSubi = method()
+cSubi (ZZ, Ideal) := ZZ => (i,I) -> (
+    G := grGr I;
+    if not G.cache#?"hilbertSeries" then G.cache#"hilbertSeries" = hilbertSeries(G, Reduce => true);
+    hS := G.cache#"hilbertSeries";
+    -- hilbertS := reduceHilbert hilbertSeries G;
+    poinP := numerator hS;
+    dPoinP := denominator hS;
+    A := ring poinP;
+    -- B := newRing (A, Degrees => {{1,0}, {0,1},{0,0}});
+    B := newRing (A, Degrees => {{1,0}, {0,1}});
+    use B;
+    topP := sub (poinP, B);
+    botP := value toString dPoinP;
+    firVar := (ultimate (flatten, entries (vars B)_{0}))_0;
+    secVar := (ultimate (flatten, entries (vars B)_{1}))_0;
+    powerFirVar := (degree botP)_0;     
+    powerSecVar := (degree botP)_1;     
+    d := dim ring I;
+    a := powerFirVar - (d - i);
+    b := powerSecVar - i;
+    c := topP;
+    for i from 1 to a do (c = diff( firVar, c));
+    c = sub (c, firVar => 1);
+    for i from 1 to b do (c = diff (secVar, c));
+    c = sub (c, secVar => 1); 
+    c = c*(-1)^(a+b);
+    if (c <= 0 or a < 0 or b < 0) then 0 else (sub(c,ZZ) // (a! * b!))
 )
 
-jmult = method()
-jmult Ideal := ZZ => I -> (
-    if ((isIdeal I) == false) then (print "input is not an ideal", break);
-    R := ring I;
-    r := rank source vars R;
-    G := gens I;
-    g := rank source G;
-    M := random(R^r,R^g)*transpose G;
-    J := ideal(submatrix(M,{0..r-2},));
-    UI := saturate(J,I) + ideal(submatrix(M,{r-1..r-1},));
-    N := monoid[Variables=>r, MonomialOrder=>{Weights=>{-1,-1},RevLex},Global=>false];
---        L := leadTerm gb UI;
-    L := tangentCone UI;
-    S := (ZZ/101) N;
-    f := map(S,R,vars S);
-    C := S/f(L);
---        dim (R/ ideal(submatrix(M,{0..r-1},)))
-    if dim C == 0 then length(C^1) else print "analytic spread not maximal"	     
-)
+
+--egrGr = method()
+--egrGr Ideal := ZZ => I -> (
+--    A := grGr I;
+--    B := newRing (A, Degrees => splice{ (#gens A) : 1});
+--    degree B
+--)
+
 
 
 ----------------------------------------------------------------------
 -- Patching
 
 
-hilbertSamuelMultiplicity := I -> ( -- computes e(m, R/I) (need to fix)
-    R := (ring I)/I;
-    k := coefficientRing ring I;
-    maxR := ideal vars R;
-    if (dim R == 0) then return (degree comodule primaryComponent (I, maxR)); -- finite colength case; 
-    genLinComMat := (gens maxR) * random (k^(numgens maxR), k^(dim R));
-    colInGenLinComMat := numcols genLinComMat;
-    genRedIdeal := ideal (0_R);
-    if (dim R == 1) then genRedIdeal = saturate (ideal (0_R), maxR) + ideal genLinComMat  -- the case of dim R/I = 1
+--hilbertSamuelMultiplicity := I -> ( -- computes e(m, R/I) (need to fix)
+--    R := (ring I)/I;
+--    k := coefficientRing ring I;
+--    maxR := ideal vars R;
+--    if (dim R == 0) then return (degree comodule primaryComponent (I, maxR)); -- finite colength case; 
+--    genLinComMat := (gens maxR) * random (k^(numgens maxR), k^(dim R));
+--    colInGenLinComMat := numcols genLinComMat;
+--    genRedIdeal := ideal (0_R);
+--    if (dim R == 1) then genRedIdeal = saturate (ideal (0_R), maxR) + ideal genLinComMat  -- the case of dim R/I = 1
     -- the case of dim R/I >= 2
-        else genRedIdeal = saturate (ideal submatrix (genLinComMat, {0..(colInGenLinComMat - 2)}), maxR) + ideal genLinComMat;     
+--        else genRedIdeal = saturate (ideal submatrix (genLinComMat, {0..(colInGenLinComMat - 2)}), maxR) + ideal genLinComMat;     
     -- if (codim genRedIdeal != dim R) then return "Elements chosen are not general. Try again."; 
     -- use ring I;
     -- the length method doesn't handle the non-graded case, but the degree function does.
-    degree comodule primaryComponent (genRedIdeal,maxR) -- alternatively normalCone?
-)
+--    degree comodule primaryComponent (genRedIdeal,maxR) -- alternatively normalCone?
+--)
 
-getGenElts = method(Options => {symbol minTerms => -1, symbol numCandidates => 3})
-getGenElts (Ideal, ZZ) := List => opts -> (I, n) -> (
-    G := flatten entries mingens I; -- I_*;
-    R := ring I;
-    J := ideal(0_R);
-    result := {};
-    for i from 1 to n do (
-        foundNext := false;
-        t := if opts.minTerms < 0 then #G else opts.minTerms;
-        while not foundNext and t <= #G do (
-            if debugLevel > 0 then print("Trying" | (if t > 1 then " sums of " | toString(t) else "") | " generators of I");
-            cands := unique apply(opts.numCandidates, i -> (matrix{randomSubset(G, t)} *random(R^t, R^1))_(0,0));
-            for c in cands do (
-                if codim(saturate(J, I) + ideal c) == i then (
-                    result = append(result, c);
-                    if member(c, G) then G = delete(c, G);
-                    foundNext = true;
-                    break;
-                );
-            );
-            t = t+1;
-        );
-        if foundNext then J = ideal result else error "Could not find general element. Consider running this function again, e.g. with a higher value of minTerms";
-    );
-    result
-)
 
+
+-- This is the main method. It computes the multiplicity sequence of an ideal using one of two strategies: either Hilbert functions (default), or general elements.
 multiplicitySequence = method(Options => options getGenElts ++ {Strategy => "grGr"})
 multiplicitySequence (ZZ, Ideal) := ZZ => opts -> (j, I) -> (
     -- I = trim I;
@@ -372,39 +218,197 @@ multiplicitySequence (ZZ, Ideal) := ZZ => opts -> (j, I) -> (
 )
 multiplicitySequence Ideal := Sequence => opts -> I -> hashTable toList apply(codim I..analyticSpread I, j -> {j, multiplicitySequence(j, I, opts)})
 
-randomSubset = method()
-randomSubset (List, ZZ) := List => (L, k) -> (
-    i := random(#L);
-    if k == 1 then {L#i} else {L#i} | randomSubset(L_(delete(i, toList(0..<#L))), k-1)
+
+
+-- Computes the j-multiplicity of an ideal
+jmult = method()
+jmult Ideal := ZZ => I -> (
+    if ((isIdeal I) == false) then (print "input is not an ideal", break);
+    R := ring I;
+    r := rank source vars R;
+    G := gens I;
+    g := rank source G;
+    M := random(R^r,R^g)*transpose G;
+    J := ideal(submatrix(M,{0..r-2},));
+    UI := saturate(J,I) + ideal(submatrix(M,{r-1..r-1},));
+    N := monoid[Variables=>r, MonomialOrder=>{Weights=>{-1,-1},RevLex},Global=>false];
+--        L := leadTerm gb UI;
+    L := tangentCone UI;
+    S := (ZZ/101) N;
+    f := map(S,R,vars S);
+    C := S/f(L);
+--        dim (R/ ideal(submatrix(M,{0..r-1},)))
+    if dim C == 0 then length(C^1) else print "analytic spread not maximal"	     
 )
 
---------------------------------------------------------
 
-TEST ///
-R = QQ[x,y,z]
-I = ideal "x4z, y3z"
-assert(multiplicitySequence I === hashTable {(1, 1), (2, 15)})
-///
 
-TEST ///
-R = QQ[x,y,z,t]
-I = ideal "x3,y4,z5" * ideal "t"
-assert(multiplicitySequence I === hashTable {(1, 1), (2, 3), (3, 72)})
-///
+--gHilb = method()
+--gHilb (ZZ, MonomialIdeal) := Module => (n, I) -> (
+--    R := ring I;
+--    Inp1 := sub((intclMonIdeal trim I^(n+1))_0 , R );
+--    In := sub((intclMonIdeal trim I^n)_0, R  );
+--    HH^0( (In / Inp1) )
+--)
+--gHilb (ZZ, Ideal) := Module => (n, I) -> ( 
+--    J := monomialIdeal I;
+--    if J != I then error "Expected a monomial ideal";
+--    gHilb (n, J)
+--)
 
-TEST ///
-R = QQ[x_1..x_8]
-M = genericMatrix(R,4,2)
-I = minors(2, M)
-assert(multiplicitySequence I === hashTable {(3, 4), (4, 6), (5, 4)})
-///
+---- extract the exponent of a monomial ideal
+mon2Exp = method()
+mon2Exp MonomialIdeal := Matrix => I -> (
+    -- J := trim I;
+    -- n := numgens J;
+    -- transpose (matrix flatten apply( for i from 0 to (n - 1) list J_i, exponents ))
+    transpose matrix flatten apply(I_*, exponents)
+)
+mon2Exp Ideal := Matrix => I -> (
+    J := monomialIdeal I;
+    if J != I then error "Expected a monomial ideal";
+    mon2Exp monomialIdeal I
+)
 
-TEST ///
-R = QQ[x_1..x_9]
-M = genericMatrix(R,3,3)
-I = minors(2, M)
-assert(multiplicitySequence I === hashTable {(4, 6), (5, 12), (6, 12), (7, 6), (8, 3), (9, 2)})
-///
+
+---- computes the minimal monomial reduction of a monomial ideal
+monReduction = method()
+monReduction MonomialIdeal := MonomialIdeal => I -> (
+    -- R := ring I;
+    -- P := NP (I);
+    -- M := vertices P;
+    -- s := rank source M;
+    -- J := ideal (0_R);
+    -- for i from 0 to (s-1) do J = J + ideal R_((entries transpose M_{i})_0);
+    -- trim J
+    sum(entries transpose sub(vertices NP I, ZZ), e -> monomialIdeal((ring I)_e))
+)
+monReduction Ideal := MonomialIdeal => I -> (
+    J := monomialIdeal I;
+    if J != I then error "Expected a monomial ideal";
+    monReduction J
+)
+
+
+--- from a matrix M extract the rows where all the entries are not zero
+isBddFacet := (n, M) -> (
+    --- r := rank target M; --- # of rows
+    s := rank source M; --- # of columns
+    mutableM := mutableIdentity (ZZ,s); --- row as a vector
+    for i from 0 to (s - 1) do (mutableM_(i,i) = M_(n,i));
+    det mutableM != 0 --- No if 0, Yes otherwise
+)
+
+--adds a column with zero entries to a given matrix
+pyrF := M -> M | transpose map(ZZ^1, rank target M, 0)
+
+---- gives a matrix of the from where all the entries are zero except one spot i,i
+box := (i,n) -> (
+    M := mutableIdentity (ZZ,n);
+    for r from 0 to (n-1) do if ( r != (i-1)) then M_(r,r) = 0;
+    matrix M
+)
+
+
+-- Computes the Newton polyhedron of a monomial ideal
+NP = method()
+NP MonomialIdeal := Polyhedron => I -> (
+    -- ddd := sub(dim ring I,ZZ);
+    convexHull (mon2Exp I) + posHull (id_(ZZ^(sub(dim ring I,ZZ))))     
+)
+NP Ideal := Polyhedron => I -> (
+    J := monomialIdeal I;
+    if J != I then error "Expected a monomial ideal";
+    NP J
+)
+
+-- Computes the analytic spread of a monomial ideal
+monAnalyticSpread = method()
+monAnalyticSpread MonomialIdeal := MonomialIdeal => I -> (
+    d := dim ring I;
+    P := NP(I);
+    M := halfspaces P;
+    Mm := M_0;
+    Mv := M_1;
+    r := rank target Mm;  --- # of rows
+    -- s := rank source Mm;  --- # of columns
+    monAS := 0;
+    for p from 0 to r-1 do (
+        face := intersection (Mm, Mv, Mm^{p}, Mv^{p});
+        monAS = max(monAS,dim convexHull vertices face);      
+    );
+    sub(monAS, ZZ)+1
+)
+
+
+
+monAnalyticSpread Ideal := MonomialIdeal => I -> (
+    J := monomialIdeal I;
+    if J != I then error "Expected a monomial ideal";
+    monAnalyticSpread J
+)
+
+
+---- monomial j-multiplicity
+---- Dependency: loadPackage "Polyhedra", pryF, isBddFacet, mon2Exp, NP 
+monjMult = method()
+monjMult MonomialIdeal := ZZ => I -> (
+    -- if ((isMonomialIdeal III) == false) then (print "The input is not a monomial ideal", break);
+    -- II := III; --- unnecssary one one could change every II to III
+    d := dim ring I;
+    P := NP(I);
+    M := halfspaces P;
+    Mm := M_0;
+    Mv := M_1;
+    r := rank target Mm;  --- # of rows
+    -- s := rank source Mm;  --- # of columns
+    monj := 0;
+    for p from 0 to r-1 do (
+    if isBddFacet(p, Mm) then (
+        face := intersection (Mm, Mv, Mm^{p}, Mv^{p});
+        monj = monj + (d!)*(volume convexHull pyrF(vertices face));
+        );
+    );
+    sub(monj, ZZ)
+)
+monjMult Ideal := ZZ => I -> (
+    J := monomialIdeal I;
+    if J != I then error "Expected a monomial ideal";
+    monjMult J
+)
+
+
+
+-- multSeq = method()
+-- multSeq Ideal := List => I -> (
+    -- hashTable for i from codim I to analyticSpread I list (i, cSubi (i,I))
+-- )
+
+-- lengthij, length10ij, length11ij do not seem to be used elsewhere, and have been commented out
+-- lengthij = method()
+-- lengthij (ZZ, ZZ, Ideal) := ZZ => (i,j,I) -> (
+    -- R := ring I;
+    -- m := ideal vars R;
+    -- M := (trim (m^i*I^j + I^(j+1)) ) / (  trim (m^(i+1)*I^j + I^(j+1)) );
+    -- degree (M^1)
+-- )
+
+-- length10ij = method()
+-- length10ij (ZZ, ZZ, Ideal) := ZZ => (i,j,I) -> (
+    -- R := ring I;
+    -- m := ideal vars R;
+    -- M := (trim (I^j ) ) / (  trim (m^(i+1)*I^j + I^(j+1)) );
+    -- degree (M^1)
+-- )
+
+-- length11ij = method()
+-- length11ij (ZZ,ZZ, Ideal) := ZZ => (i,j,I) -> (
+    -- L := 0;
+    -- for k from 0 to j do (L = L + length10ij(i,k,I));
+    -- sub (L, ZZ)
+-- )
+
+
 
 -- Documentation
 
@@ -414,39 +418,40 @@ doc ///
     Key
         MultiplicitySequence
     Headline
-        multiplicity sequences of ideals
+        multiplicity sequence of ideals
     Description
         Text
-            This package contains various functions to compute the multiplicity sequence of an ideal.
+	    The goal of this package is to compute the multiplicity sqeuence of an ideal $I$ in a standard graded  
+	    equidimensional ring over a field $(R,m,k)$, where $m = R_+$. The multiplicity sequence is a generalization 
+	    of the Hilbert-Samuel multiplicity for ideals that are not necessarily m-primary. This sequence is 
+	    obtained by considering the second sum transform of the Hilbert polynomial in two variables  of the 
+	    bigraded ring grGr: the associated graded algebra of the extension of $m$ in the associated graded algebra of $I$.
+	    
+	    The importance of this sequence comes from ....
+            
+	    This package includes two different ways of computing the multiplicity sequence of an ideal. The first one uses the
+	    definition in terms of Hilbert polynomiasl, while the sencond uses a general element approach based on [] 
+	    (see also []).
+	    
         Text
-            The package contains the method "jmult" which computes the j-multiplicity of an ideal using Theorem 3.6 in Nishida-Ulrich (Computing j-multiplicities, J. of Alg 2010). 
-            The function jmult is based on the code written by H.Schenck and J. Validashti.	  
+            The package contains the method "jmult" which computes the j-multiplicity of an ideal using Theorem 3.6 
+	    in Nishida-Ulrich (Computing j-multiplicities, J. of Alg 2010).  The function jmult is based on code 
+	    written by H.Schenck and J. Validashti.	  
         Text
-            The function monjMult comuputes the j-multiplicity for an monomial ideal by computing the volume of a pyramid. This is a result of J. Jeffries and J. Montano, The $j$-Multiplicity of Monomial Ideals, to appear in Math. Res. Letters.
+            The function monjMult comuputes the j-multiplicity for an monomial ideal by computing the volume of a pyramid. 
+	    This is a result of J. Jeffries and J. Montano, The $j$-Multiplicity of Monomial Ideals, 
+	    to appear in Math. Res. Letters.
         Text
-            The author thanks D. Eisenbud, D. Grayson, and M. Stillman for organizing a Macaulay2 day during the special year in commutative algebra 2012-2013 at MSRI where he learned how to write a package.
-///
-
-doc ///
-    Key
-        jmult
-        (jmult, Ideal)
-    Headline
-        the j-multiplicity
-    Usage
-        jmult(I)
-    Inputs
-        I:Ideal
-    Outputs
-        :ZZ
-            the j-multiplicity of I
-    Description
-        Text
-        Example
-            R = QQ[x,y]
-            I = ideal"x2,xy"
-            jmult I
-    SeeAlso
+            The second author thanks D. Eisenbud, D. Grayson, and M. Stillman for organizing a Macaulay2 day during the special 
+	    year in commutative algebra 2012-2013 at MSRI where he learned how to write a package.
+    	Text
+            {\bf References}:
+        Code
+            UL {
+                "[1] ", 
+                "[2] "
+            }	    
+	    
 ///
 
 doc ///
@@ -520,6 +525,31 @@ doc ///
             multiplicitySequence I
     SeeAlso
 ///
+
+
+
+doc ///
+    Key
+        jmult
+        (jmult, Ideal)
+    Headline
+        the j-multiplicity
+    Usage
+        jmult(I)
+    Inputs
+        I:Ideal
+    Outputs
+        :ZZ
+            the j-multiplicity of I
+    Description
+        Text
+        Example
+            R = QQ[x,y]
+            I = ideal"x2,xy"
+            jmult I
+    SeeAlso
+///
+
 
 doc ///
     Key
@@ -621,6 +651,41 @@ undocumented {
     "minTerms",
      "monAnaltyticSpread"
  }
+
+
+
+
+
+--------------------------------------------------------
+
+TEST ///
+R = QQ[x,y,z]
+I = ideal "x4z, y3z"
+assert(multiplicitySequence I === hashTable {(1, 1), (2, 15)})
+///
+
+TEST ///
+R = QQ[x,y,z,t]
+I = ideal "x3,y4,z5" * ideal "t"
+assert(multiplicitySequence I === hashTable {(1, 1), (2, 3), (3, 72)})
+///
+
+TEST ///
+R = QQ[x_1..x_8]
+M = genericMatrix(R,4,2)
+I = minors(2, M)
+assert(multiplicitySequence I === hashTable {(3, 4), (4, 6), (5, 4)})
+///
+
+TEST ///
+R = QQ[x_1..x_9]
+M = genericMatrix(R,3,3)
+I = minors(2, M)
+assert(multiplicitySequence I === hashTable {(4, 6), (5, 12), (6, 12), (7, 6), (8, 3), (9, 2)})
+///
+
+
+
 
 end--
 
