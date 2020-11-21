@@ -32,7 +32,7 @@ export {
     "getGenElts",
     "minTerms",
     "numCandidates",
-    "jmult",
+    "jMult",
     "monReduction",
     "NP",
     "monAnalyticSpread",
@@ -150,8 +150,8 @@ multiplicitySequence Ideal := HashTable => opts -> I -> (
 -- hilbertPolynomial Ring := RingElement => o -> R -> hilbertPolynomial(R^1, o)
 
 -- Computes the j-multiplicity of an ideal
-jmult = method()
-jmult Ideal := ZZ => I -> (
+jMult = method()
+jMult Ideal := ZZ => I -> (
     if ((isIdeal I) == false) then (print "input is not an ideal", break);
     R := ring I;
     r := rank source vars R;
@@ -202,7 +202,7 @@ pyrF := M -> M | transpose map(ZZ^1, rank target M, 0)
 ---- gives a matrix of the from where all the entries are zero except one spot i,i
 box := (i,n) -> (
     M := mutableIdentity (ZZ,n);
-    for r from 0 to (n-1) do if ( r != (i-1)) then M_(r,r) = 0;
+    for r from 0 to (n-1) do if r != i-1 then M_(r,r) = 0;
     matrix M
 )
 
@@ -210,7 +210,7 @@ box := (i,n) -> (
 NP = method()
 NP Ideal := Polyhedron => I -> (
     if I != monomialIdeal I then error "Expected a monomial ideal";
-    convexHull (mon2Exp I) + posHull (id_(ZZ^(sub(dim ring I,ZZ))))
+    convexHull(mon2Exp I) + posHull(id_(ZZ^(dim ring I)))
 )
 
 -- Computes the analytic spread of a monomial ideal
@@ -282,8 +282,8 @@ doc ///
 	    (see also []).
 	    
         Text
-            The package contains the method "jmult" which computes the j-multiplicity of an ideal using Theorem 3.6 
-	    in Nishida-Ulrich (Computing j-multiplicities, J. of Alg 2010).  The function jmult is based on code 
+            The package contains the method "jMult" which computes the j-multiplicity of an ideal using Theorem 3.6 
+	    in Nishida-Ulrich (Computing j-multiplicities, J. of Alg 2010).  The function jMult is based on code 
 	    written by H.Schenck and J. Validashti.	  
         Text
             The function monjMult comuputes the j-multiplicity for an monomial ideal by computing the volume of a pyramid. 
@@ -314,7 +314,7 @@ doc ///
         I:Ideal
     Outputs
         :Ring
-            The bigraded ring Gr_m(Gr_I(R)), presented as a quotient of a bigraded polynomial ring with variables names u and v.
+            the bigraded ring Gr_m(Gr_I(R)), presented as a quotient of a bigraded polynomial ring with variables names u and v.
     Description
         Text
         Example
@@ -342,7 +342,7 @@ doc ///
         I:Ideal
     Outputs
         :HashTable
-            The multiplicity sequence $\{c_i\}$, where $codim I \le$ $i  \le$  $\ell(I)$.
+            the multiplicity sequence $\{c_i\}$, where $codim I \le$ $i  \le$  $\ell(I)$.
     Description
         Text
         Example
@@ -364,24 +364,24 @@ doc ///
         I:Ideal
     Outputs
         :HashTable
-            The multiplicity sequence $\{c_i\}$, where $codim I \le$ $i  \le$  $\ell(I)$.
+            the multiplicity sequence $\{c_i\}$, where $codim I \le$ $i  \le$  $\ell(I)$.
     Description
         Text
         Example
             R = QQ[x,y]
             I = ideal"x2,xy"
-            hilbSequence I
+            hilbSequence comodule I
     SeeAlso
 ///
 
 doc ///
     Key
-        jmult
-        (jmult, Ideal)
+        jMult
+        (jMult, Ideal)
     Headline
         the j-multiplicity
     Usage
-        jmult(I)
+        jMult(I)
     Inputs
         I:Ideal
     Outputs
@@ -390,10 +390,13 @@ doc ///
     Description
         Text
         Example
-            R = QQ[x,y]
-            I = ideal"x2,xy"
-            jmult I
+            R = QQ[x,y,z]
+            I = ideal"xy,yz,zx"
+            elapsedTime jMult I
+            elapsedTime monjMult I
     SeeAlso
+        multiplicitySequence
+        monjMult
 ///
 
 doc ///
@@ -408,36 +411,57 @@ doc ///
         I:Ideal
     Outputs
         :ZZ
-            the j-multiplicity of a monomial ideal.
+            the j-multiplicity of I.
     Description
         Text
+            Given a monomial ideal I, this function computes the j-multiplicity of I
+	    following the method of Jeffries-Montaño. 
+	    --TODO whether or not include a detailed reference
         Example
-            R = QQ[x,y,z]
-            I = ideal"x6,y6,z6,x2yz,xy2z,xyz2"
-            monjMult (I)
+            R = QQ[x,y]
+            -- I = ideal"xy,yz,zx"
+	    I = ideal"xy5,x2y3,x3y2"
+            --I = ideal"x6,y6,z6,x2yz,xy2z,xyz2"
+            elapsedTime monjMult I
+            -- elapsedTime jMult I
+    	    --TODO an example where monjMult is better than jMult
     SeeAlso
+        multiplicitySequence
+	jMult
+        monReduction
+	NP
 ///
 
 doc ///
     Key
         NP
         (NP, Ideal)
-	--(NP, MonomialIdeal)
     Headline
-        the Newton-Polyhedron of a mominial ideal
+        the Newton polyhedron of a monomial ideal
     Usage
         NP(I)
     Inputs
         I:Ideal
     Outputs
         :Polyhedron
-            The Newton-Polyhedron of the monomial ideal I
+            the Newton polyhedron of the monomial ideal I
     Description
         Text
+	    Given a monomial ideal I in $k[x_1,\dots,x_d]$, the convex hull 
+	    in $\mathbb{R}^d$ of the set of exponents of all monomials in I 
+	    is called the Newton polyhedron of I. 
         Example
-            R = QQ[x,y]
-            I = ideal"x2,xy"
-            NP I
+            R = QQ[x,y,z]
+            I = ideal"x2,y3,yz"
+            P = NP I
+        Text
+	    Note that a monomial is in the integral closure of I 
+	    if and only if its exponent vector is in NP(I).
+        Example
+	    J = integralClosure(I,1)
+    	    P == NP J
+    SeeAlso
+	monReduction
 ///
 
 doc ///
@@ -445,19 +469,31 @@ doc ///
         monReduction
         (monReduction, Ideal)
     Headline
-        The minimal monomial reduction of a monomial ideal
+        the minimal monomial reduction of a monomial ideal
     Usage
         monReduction(I)
     Inputs
         I:MonomialIdeal
     Outputs
         :MonomialIdeal
-            The minimal monomial of reduction of a monomial ideal I
+            the minimal monomial reduction of I
     Description
         Text
+	    Given a monomial ideal I, this function computes a monomial reduction of I
+	    (i.e. a reduction of I which is a monomial ideal), 
+	    which is inclusion-wise minimal among all monomial reductions of I.
         Example
             R = QQ[x,y]
-            monReduction (ideal vars R)^2
+            I = ideal"x2,xy,y3"
+            elapsedTime monReduction I
+	    -- TODO -- Add an example of a monomial reduction which is not a minimal reduction
+        Text
+	    This function works as follows: we find the extremal rays of NP(I), 
+	    which correspond to the minimal generators of the monomial reduction of I. 
+    Caveat
+	As seen above, a monomial minimal reduction need not be a minimal reduction.
+    SeeAlso
+	NP
 ///
 
 undocumented {
@@ -658,7 +694,7 @@ length11ij (ZZ,ZZ, Ideal) := ZZ => (i,j,I) -> (
 R = QQ[x,y]
 I = ideal "x2y,xy2"
 monjMult I
-jmult I -- jmult 3
+jMult I -- jMult 3
 
 -- Monomial ideal, not generated in single degree
 R = QQ[x,y,z]
