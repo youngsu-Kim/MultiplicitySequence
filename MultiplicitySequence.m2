@@ -14,7 +14,7 @@ newPackage(
         }
     },
     Headline => "computing the multiplicity sequence of an ideal",
-    DebuggingMode => true,
+    DebuggingMode => false,
     PackageExports => {
         "ReesAlgebra", 
         "TangentCone", 
@@ -22,29 +22,29 @@ newPackage(
         "Normaliz",
         "PrimaryDecomposition",
         "MinimalPrimes"
-    },
-	Reload => "true"
+    }
 )
 
 export {
     "jmult",
     "grGr",
     "cSubi",
-    -- "multiplicitySequence",
+    "multiplicitySequence",
+    "hilbSequence",
+    -- "hilbertPolynomial",
     "NP",
     "monReduction",
     "monjMult",
     "gHilb",
     "hilbertSamuelMultiplicity",
     "getGenElts",
-    "multiplicitySequence",
     "randomSubset",
     "numCandidates",
     "minTerms",
     "monAnalyticSpread"
  }
 
-installMinprimes() -- for MinimalPrimes.m2
+-- installMinprimes() -- for MinimalPrimes.m2
 
 
 randomSubset = method()
@@ -216,9 +216,40 @@ multiplicitySequence (ZZ, Ideal) := ZZ => opts -> (j, I) -> (
         degree(if isHomogeneous J then J else tangentCone J)
     ) else cSubi(j, I)
 )
-multiplicitySequence Ideal := Sequence => opts -> I -> hashTable toList apply(codim I..analyticSpread I, j -> {j, multiplicitySequence(j, I, opts)})
+-- multiplicitySequence Ideal := Sequence => opts -> I -> hashTable toList apply(codim I..analyticSpread I, j -> {j, multiplicitySequence(j, I, opts)})
 
 
+hilbSequence = method()
+hilbSequence Module := HashTable => M -> (
+    HS := hilbertSeries(M, Reduce => true);
+    q := value numerator HS;
+    coordChange := map(ring q, ring q, matrix{{#gens ring q:1}} - vars ring q);
+    s := first exponents coordChange value denominator HS;
+    b := select(listForm coordChange q, p -> all(#s, i -> p#0#i <= s#i));
+    hashTable apply(b, p -> (s - p#0, p#1))
+)
+hilbSequence Ring := HashTable => R -> hilbSequence R^1
+
+multiplicitySequence Ideal := HashTable => opts -> I -> (
+    H := hilbSequence grGr I;
+    d := max(keys H /sum);
+    hashTable apply(select(keys H, k -> sum k == d), k -> last k => H#k)
+)
+
+-- hilbertPolynomial = method(Options => {Projective => false}) -- should be a hook?
+-- hilbertPolynomial Module := RingElement => o -> M -> ( -- TODO: fix
+    -- if not isHomogeneous M then error "expected a (multi-)homogeneous module";
+    -- R := ring M;
+    -- n := degreeLength R;
+    -- if n > 1 then (
+        -- i := getSymbol "i";
+        -- S := QQ(monoid[i_1..i_n]);
+        -- b := hilbSequence M;
+        -- sum(pairs b, p -> p#1*product(#gens S, j -> binomial(S_j+p#0#j, p#0#j)))
+    -- ) else Core$hilbertPolynomial(M, o)
+-- )
+-- hilbertPolynomial Ideal := RingElement => o -> I -> hilbertPolynomial(comodule I, o)
+-- hilbertPolynomial Ring := RingElement => o -> R -> hilbertPolynomial(R^1, o)
 
 -- Computes the j-multiplicity of an ideal
 jmult = method()
@@ -617,33 +648,33 @@ doc ///
             monReduction (ideal vars R)^2
 ///
 
-doc ///
-    Key
-        gHilb
-	(gHilb, ZZ, MonomialIdeal)
-	(gHilb, ZZ, Ideal)
-    Headline
-        The length of the module ??
-    Usage
-        gHilb(n,I)
-    Inputs
-        n:ZZ
-	I:MonomialIdeal
-    Outputs
-        :ZZ
-            The length of the module ??
-    Description
-        Text
-        Example
-            R = QQ[x,y]
-            I = ideal "x2,y2"
-	    gHilb(2,I)
-///
+-- doc ///
+    -- Key
+        -- gHilb
+	-- (gHilb, ZZ, MonomialIdeal)
+	-- (gHilb, ZZ, Ideal)
+    -- Headline
+        -- The length of the module ??
+    -- Usage
+        -- gHilb(n,I)
+    -- Inputs
+        -- n:ZZ
+	-- I:MonomialIdeal
+    -- Outputs
+        -- :ZZ
+            -- The length of the module ??
+    -- Description
+        -- Text
+        -- Example
+            -- R = QQ[x,y]
+            -- I = ideal "x2,y2"
+	    -- gHilb(2,I)
+-- ///
 
 undocumented {
     --"NP",
     --"monReduction",
-    --"gHilb",
+    "gHilb",
     "hilbertSamuelMultiplicity",
     "getGenElts",
     "randomSubset",
@@ -684,13 +715,10 @@ I = minors(2, M)
 assert(multiplicitySequence I === hashTable {(4, 6), (5, 12), (6, 12), (7, 6), (8, 3), (9, 2)})
 ///
 
-
-
-
 end--
 
 restart
-loadPackage "MultiplicitySequence" --("MultiplicitySequence", Reload=>true)
+loadPackage ("MultiplicitySequence", Reload=>true)
 installPackage("MultiplicitySequence", RemakeAllDocumentation => true)
 uninstallPackage "MultiplicitySequence"
 check "MultiplicitySequence"
@@ -702,7 +730,6 @@ elapsedTime multiplicitySequence I
 elapsedTime multiplicitySequence(codim I, I)
 elapsedTime multiplicitySequence(codim I+1, I)
 elapsedTime multiplicitySequence(analyticSpread I, I)
-elapsedTime multiplicitySequence I
 multiplicitySequence(I, Strategy => "grGr") === multiplicitySequence(I, Strategy => "genElts")
 
 R = QQ[x,y]
@@ -732,6 +759,9 @@ elapsedTime isReduction (I,J)
 elapsedTime grGr I;
 elapsedTime cSubi(codim I, I)
 elapsedTime multiplicitySequence I
+
+elapsedTime grGr J; -- ~ 10 seconds for (m,n) = (4,4)
+multiplicitySequence J === multiplicitySequence I
  
 --
 R = QQ[x,y,z]
@@ -750,3 +780,12 @@ I = ideal "x,y,z"
 S = R/I
 J = ideal z
 multiplicitySequence(1, J)
+
+R = QQ[a..e]
+R = QQ[a..e,DegreeRank => 5]
+I = monomialIdeal "de,abe,ace,abcd" -- Ex. 1.14 in Miller-Sturmfels
+hilbertPolynomial I
+
+R = QQ[x_1..x_3, DegreeRank => 3]
+I = monomialIdeal(x_1^2, x_1*x_2, x_2^3, x_1*x_3^3) -- Ex. 2.4 in Miller-Sturmfels
+hilbertSeries I -- Ex 2.13 in Miller-Sturmfels
