@@ -1,7 +1,7 @@
 newPackage(
     "MultiplicitySequence",
-    Version => "0.1", 
-    Date => "Oct. 14, 2020",
+    Version => "0.5", 
+    Date => "Nov 21, 2020",
     Authors => {
         {Name => "Justin Chen", 
             Email => "justin.chen@math.gatech.edu"
@@ -26,29 +26,23 @@ newPackage(
 )
 
 export {
-    "jmult",
     "grGr",
-    "cSubi",
     "multiplicitySequence",
     "hilbSequence",
-    -- "hilbertPolynomial",
-    "NP",
-    "monReduction",
-    "monjMult",
-    "gHilb",
-    "hilbertSamuelMultiplicity",
     "getGenElts",
-    "randomSubset",
-    "numCandidates",
     "minTerms",
-    "monAnalyticSpread"
+    "numCandidates",
+    "jmult",
+    "monReduction",
+    "NP",
+    "monAnalyticSpread",
+    "monjMult"
  }
 
 -- installMinprimes() -- for MinimalPrimes.m2
 
-
-randomSubset = method()
-randomSubset (List, ZZ) := List => (L, k) -> (
+-- randomSubset = method()
+randomSubset := (L, k) -> (
     i := random(#L);
     if k == 1 then {L#i} else {L#i} | randomSubset(L_(delete(i, toList(0..<#L))), k-1)
 )
@@ -80,116 +74,11 @@ getGenElts (Ideal, ZZ) := List => opts -> (I, n) -> (
     result
 )
 
-
-
-
-
--- computes the bigraded associated graded algebra with respect to m and I
-grGr = method()
-grGr Ideal := Ring => I -> (
-    if I.cache#?"gr_mGr_I" then I.cache#"gr_mGr_I" else I.cache#"gr_mGr_I" = (
-        G1 := normalCone(I, Variable => "v");
-        G2 := normalCone(sub(ideal gens ring I, G1), Variable => "u");
-        newRing(minimalPresentation G2, Degrees => splice({numgens ring I : {1,0}} | {numgens G1 : {0,1}}))
-        -- R := ring I;
-        -- m := ideal vars R;
-        -- n := numgens I;
-        -- d := numgens m;
-        -- if (I == m) then print "I is m" else assert ( (ideal (1_R) == I:m) == false ); -- To check if the ideal is inside of the maximal ideal m
-        -- K1 := reesIdeal I; 
-        -- reesRingI := ring K1;
-        -- v := "v";
-        -- R1 := (R) ( monoid[ VariableBaseName => v, Variables => (n)]); -- The source of the first Rees ring with the right ordering
-        -- phi1 := map(R1, reesRingI, vars R1);
-        -- IR1 := phi1 sub(I, reesRingI);
-        -- K1R1 := phi1 K1;
-        -- G1 := R1 / (IR1 + K1R1);
-        -- mG1 := sub (phi1 sub(m, reesRingI), G1);
-        -- K2 := reesIdeal mG1;
-        -- reesRingm := ring K2;
-        -- u := "u";
-        -- R2 := (G1) ( monoid[VariableBaseName => u, Variables => (d)]);
-        -- phi2 := map(R2, reesRingm, vars R2);
-        -- mG1R2 := phi2 sub(mG1, reesRingm);
-        -- K2R2 := phi2 K2;
-        -- first flattenRing (R2 / (mG1R2 + K2R2))
-        -- T := R2 / (mG1R2 + K2R2); 
-        -- modification of T to have the right degrees
-        --minimalPresentation T
-        -- hilbertSeries oo
-    )
-)
-
-
--- auxiliary method that computes the multiplicity sequence via Hilbert functions
-cSubi = method()
-cSubi (ZZ, Ideal) := ZZ => (i,I) -> (
-    G := grGr I;
-    if not G.cache#?"hilbertSeries" then G.cache#"hilbertSeries" = hilbertSeries(G, Reduce => true);
-    hS := G.cache#"hilbertSeries";
-    -- hilbertS := reduceHilbert hilbertSeries G;
-    poinP := numerator hS;
-    dPoinP := denominator hS;
-    A := ring poinP;
-    -- B := newRing (A, Degrees => {{1,0}, {0,1},{0,0}});
-    B := newRing (A, Degrees => {{1,0}, {0,1}});
-    use B;
-    topP := sub (poinP, B);
-    botP := value toString dPoinP;
-    firVar := (ultimate (flatten, entries (vars B)_{0}))_0;
-    secVar := (ultimate (flatten, entries (vars B)_{1}))_0;
-    powerFirVar := (degree botP)_0;     
-    powerSecVar := (degree botP)_1;     
-    d := dim ring I;
-    a := powerFirVar - (d - i);
-    b := powerSecVar - i;
-    c := topP;
-    for i from 1 to a do (c = diff( firVar, c));
-    c = sub (c, firVar => 1);
-    for i from 1 to b do (c = diff (secVar, c));
-    c = sub (c, secVar => 1); 
-    c = c*(-1)^(a+b);
-    if (c <= 0 or a < 0 or b < 0) then 0 else (sub(c,ZZ) // (a! * b!))
-)
-
-
---egrGr = method()
---egrGr Ideal := ZZ => I -> (
---    A := grGr I;
---    B := newRing (A, Degrees => splice{ (#gens A) : 1});
---    degree B
---)
-
-
-
-----------------------------------------------------------------------
--- Patching
-
-
---hilbertSamuelMultiplicity := I -> ( -- computes e(m, R/I) (need to fix)
---    R := (ring I)/I;
---    k := coefficientRing ring I;
---    maxR := ideal vars R;
---    if (dim R == 0) then return (degree comodule primaryComponent (I, maxR)); -- finite colength case; 
---    genLinComMat := (gens maxR) * random (k^(numgens maxR), k^(dim R));
---    colInGenLinComMat := numcols genLinComMat;
---    genRedIdeal := ideal (0_R);
---    if (dim R == 1) then genRedIdeal = saturate (ideal (0_R), maxR) + ideal genLinComMat  -- the case of dim R/I = 1
-    -- the case of dim R/I >= 2
---        else genRedIdeal = saturate (ideal submatrix (genLinComMat, {0..(colInGenLinComMat - 2)}), maxR) + ideal genLinComMat;     
-    -- if (codim genRedIdeal != dim R) then return "Elements chosen are not general. Try again."; 
-    -- use ring I;
-    -- the length method doesn't handle the non-graded case, but the degree function does.
---    degree comodule primaryComponent (genRedIdeal,maxR) -- alternatively normalCone?
---)
-
-
-
 -- This is the main method. It computes the multiplicity sequence of an ideal using one of two strategies: either Hilbert functions (default), or general elements.
 multiplicitySequence = method(Options => options getGenElts ++ {Strategy => "grGr"})
 multiplicitySequence (ZZ, Ideal) := ZZ => opts -> (j, I) -> (
     -- I = trim I;
-    c := codim I; -- dim R - dim I;
+    c := codim I;
     l := analyticSpread I;
     if j < c then ( print "Requested index is less than codimension"; return 0; );
     if j > l then ( print "Requested index is greater than analytic spread"; return 0; );
@@ -214,10 +103,19 @@ multiplicitySequence (ZZ, Ideal) := ZZ => opts -> (j, I) -> (
         -- if isHomogeneous J then degree J else hilbertSamuelMultiplicity J
         -- degree(if isHomogeneous J then J else ( A := (ring J)/J; normalCone ideal gens A ))
         degree(if isHomogeneous J then J else tangentCone J)
-    ) else cSubi(j, I)
+    ) else (multiplicitySequence I)#j
 )
 -- multiplicitySequence Ideal := Sequence => opts -> I -> hashTable toList apply(codim I..analyticSpread I, j -> {j, multiplicitySequence(j, I, opts)})
 
+-- computes the bigraded associated graded algebra with respect to m and I
+grGr = method()
+grGr Ideal := Ring => I -> (
+    if I.cache#?"gr_mGr_I" then I.cache#"gr_mGr_I" else I.cache#"gr_mGr_I" = (
+        G1 := normalCone(I, Variable => "v");
+        G2 := normalCone(sub(ideal gens ring I, G1), Variable => "u");
+        newRing(minimalPresentation G2, Degrees => splice({numgens ring I : {1,0}} | {numgens G1 : {0,1}}))
+    )
+)
 
 hilbSequence = method()
 hilbSequence Module := HashTable => M -> (
@@ -263,63 +161,31 @@ jmult Ideal := ZZ => I -> (
     J := ideal(submatrix(M,{0..r-2},));
     UI := saturate(J,I) + ideal(submatrix(M,{r-1..r-1},));
     N := monoid[Variables=>r, MonomialOrder=>{Weights=>{-1,-1},RevLex},Global=>false];
---        L := leadTerm gb UI;
+    -- L := leadTerm gb UI;
     L := tangentCone UI;
     S := (ZZ/101) N;
     f := map(S,R,vars S);
     C := S/f(L);
---        dim (R/ ideal(submatrix(M,{0..r-1},)))
+    -- dim (R/ ideal(submatrix(M,{0..r-1},)))
     if dim C == 0 then length(C^1) else print "analytic spread not maximal"	     
 )
 
+--------------------------------------------------------------------------------------------
+-- Monomial functions
+--------------------------------------------------------------------------------------------
 
-
---gHilb = method()
---gHilb (ZZ, MonomialIdeal) := Module => (n, I) -> (
---    R := ring I;
---    Inp1 := sub((intclMonIdeal trim I^(n+1))_0 , R );
---    In := sub((intclMonIdeal trim I^n)_0, R  );
---    HH^0( (In / Inp1) )
---)
---gHilb (ZZ, Ideal) := Module => (n, I) -> ( 
---    J := monomialIdeal I;
---    if J != I then error "Expected a monomial ideal";
---    gHilb (n, J)
---)
-
----- extract the exponent of a monomial ideal
-mon2Exp = method()
-mon2Exp MonomialIdeal := Matrix => I -> (
-    -- J := trim I;
-    -- n := numgens J;
-    -- transpose (matrix flatten apply( for i from 0 to (n - 1) list J_i, exponents ))
+---- extract the exponents of a monomial ideal
+mon2Exp := I -> (
+    if I != monomialIdeal I then error "Expected a monomial ideal";
     transpose matrix flatten apply(I_*, exponents)
 )
-mon2Exp Ideal := Matrix => I -> (
-    J := monomialIdeal I;
-    if J != I then error "Expected a monomial ideal";
-    mon2Exp monomialIdeal I
-)
-
 
 ---- computes the minimal monomial reduction of a monomial ideal
 monReduction = method()
-monReduction MonomialIdeal := MonomialIdeal => I -> (
-    -- R := ring I;
-    -- P := NP (I);
-    -- M := vertices P;
-    -- s := rank source M;
-    -- J := ideal (0_R);
-    -- for i from 0 to (s-1) do J = J + ideal R_((entries transpose M_{i})_0);
-    -- trim J
+monReduction Ideal := MonomialIdeal => I -> (
+    if I != monomialIdeal I then error "Expected a monomial ideal";
     sum(entries transpose sub(vertices NP I, ZZ), e -> monomialIdeal((ring I)_e))
 )
-monReduction Ideal := MonomialIdeal => I -> (
-    J := monomialIdeal I;
-    if J != I then error "Expected a monomial ideal";
-    monReduction J
-)
-
 
 --- from a matrix M extract the rows where all the entries are not zero
 isBddFacet := (n, M) -> (
@@ -340,22 +206,17 @@ box := (i,n) -> (
     matrix M
 )
 
-
 -- Computes the Newton polyhedron of a monomial ideal
 NP = method()
-NP MonomialIdeal := Polyhedron => I -> (
-    -- ddd := sub(dim ring I,ZZ);
-    convexHull (mon2Exp I) + posHull (id_(ZZ^(sub(dim ring I,ZZ))))     
-)
 NP Ideal := Polyhedron => I -> (
-    J := monomialIdeal I;
-    if J != I then error "Expected a monomial ideal";
-    NP J
+    if I != monomialIdeal I then error "Expected a monomial ideal";
+    convexHull (mon2Exp I) + posHull (id_(ZZ^(sub(dim ring I,ZZ))))
 )
 
 -- Computes the analytic spread of a monomial ideal
 monAnalyticSpread = method()
-monAnalyticSpread MonomialIdeal := MonomialIdeal => I -> (
+monAnalyticSpread Ideal := ZZ => I -> (
+    if I != monomialIdeal I then error "Expected a monomial ideal";
     d := dim ring I;
     P := NP(I);
     M := halfspaces P;
@@ -371,19 +232,11 @@ monAnalyticSpread MonomialIdeal := MonomialIdeal => I -> (
     sub(monAS, ZZ)+1
 )
 
-
-
-monAnalyticSpread Ideal := MonomialIdeal => I -> (
-    J := monomialIdeal I;
-    if J != I then error "Expected a monomial ideal";
-    monAnalyticSpread J
-)
-
-
----- monomial j-multiplicity
----- Dependency: loadPackage "Polyhedra", pryF, isBddFacet, mon2Exp, NP 
+-- monomial j-multiplicity
+-- Dependences: loadPackage "Polyhedra", pryF, isBddFacet, mon2Exp, NP 
 monjMult = method()
-monjMult MonomialIdeal := ZZ => I -> (
+monjMult Ideal := ZZ => I -> (
+    if I != monomialIdeal I then error "Expected a monomial ideal";
     -- if ((isMonomialIdeal III) == false) then (print "The input is not a monomial ideal", break);
     -- II := III; --- unnecssary one one could change every II to III
     d := dim ring I;
@@ -402,46 +255,10 @@ monjMult MonomialIdeal := ZZ => I -> (
     );
     sub(monj, ZZ)
 )
-monjMult Ideal := ZZ => I -> (
-    J := monomialIdeal I;
-    if J != I then error "Expected a monomial ideal";
-    monjMult J
-)
 
-
-
--- multSeq = method()
--- multSeq Ideal := List => I -> (
-    -- hashTable for i from codim I to analyticSpread I list (i, cSubi (i,I))
--- )
-
--- lengthij, length10ij, length11ij do not seem to be used elsewhere, and have been commented out
--- lengthij = method()
--- lengthij (ZZ, ZZ, Ideal) := ZZ => (i,j,I) -> (
-    -- R := ring I;
-    -- m := ideal vars R;
-    -- M := (trim (m^i*I^j + I^(j+1)) ) / (  trim (m^(i+1)*I^j + I^(j+1)) );
-    -- degree (M^1)
--- )
-
--- length10ij = method()
--- length10ij (ZZ, ZZ, Ideal) := ZZ => (i,j,I) -> (
-    -- R := ring I;
-    -- m := ideal vars R;
-    -- M := (trim (I^j ) ) / (  trim (m^(i+1)*I^j + I^(j+1)) );
-    -- degree (M^1)
--- )
-
--- length11ij = method()
--- length11ij (ZZ,ZZ, Ideal) := ZZ => (i,j,I) -> (
-    -- L := 0;
-    -- for k from 0 to j do (L = L + length10ij(i,k,I));
-    -- sub (L, ZZ)
--- )
-
-
-
+--------------------------------------------------------------------------------------------
 -- Documentation
+--------------------------------------------------------------------------------------------
 
 beginDocumentation()
 
@@ -510,33 +327,11 @@ doc ///
 
 doc ///
     Key
-        cSubi
-        (cSubi, ZZ, Ideal)
-    Headline
-        the components of the multiplicity sequence, via iterated associated graded ring
-    Usage
-        cSubi(i, I)
-    Inputs
-        i:ZZ
-        I:Ideal
-    Outputs
-        :ZZ
-            the ith term of the multiplicity sequence of I
-    Description
-        Text
-        Example
-            R = QQ[x,y]
-            I = ideal"x2,xy"
-            cSubi(0,I)
-            jmult I
-    SeeAlso
-///
-
-doc ///
-    Key
         multiplicitySequence
         (multiplicitySequence, Ideal)
+        minTerms
         [multiplicitySequence, minTerms]
+        numCandidates
         [multiplicitySequence, numCandidates]
         [multiplicitySequence, Strategy]
     Headline
@@ -557,7 +352,27 @@ doc ///
     SeeAlso
 ///
 
-
+doc ///
+    Key
+        hilbSequence
+        (hilbSequence, Module)
+    Headline
+        the Hilbert sequence
+    Usage
+        hilbSequence I
+    Inputs
+        I:Ideal
+    Outputs
+        :HashTable
+            The multiplicity sequence $\{c_i\}$, where $codim I \le$ $i  \le$  $\ell(I)$.
+    Description
+        Text
+        Example
+            R = QQ[x,y]
+            I = ideal"x2,xy"
+            hilbSequence I
+    SeeAlso
+///
 
 doc ///
     Key
@@ -581,12 +396,10 @@ doc ///
     SeeAlso
 ///
 
-
 doc ///
     Key
         monjMult
         (monjMult, Ideal)
-        (monjMult, MonomialIdeal)
     Headline
         j-multiplicity of a monomial ideal
     Usage
@@ -631,7 +444,6 @@ doc ///
     Key
         monReduction
         (monReduction, Ideal)
-	(monReduction, MonomialIdeal)
     Headline
         The minimal monomial reduction of a monomial ideal
     Usage
@@ -648,46 +460,21 @@ doc ///
             monReduction (ideal vars R)^2
 ///
 
--- doc ///
-    -- Key
-        -- gHilb
-	-- (gHilb, ZZ, MonomialIdeal)
-	-- (gHilb, ZZ, Ideal)
-    -- Headline
-        -- The length of the module ??
-    -- Usage
-        -- gHilb(n,I)
-    -- Inputs
-        -- n:ZZ
-	-- I:MonomialIdeal
-    -- Outputs
-        -- :ZZ
-            -- The length of the module ??
-    -- Description
-        -- Text
-        -- Example
-            -- R = QQ[x,y]
-            -- I = ideal "x2,y2"
-	    -- gHilb(2,I)
--- ///
-
 undocumented {
     --"NP",
     --"monReduction",
-    "gHilb",
-    "hilbertSamuelMultiplicity",
+    -- "gHilb",
+    -- "hilbertSamuelMultiplicity",
     "getGenElts",
-    "randomSubset",
-    "numCandidates",
-    "minTerms",
-     "monAnaltyticSpread"
+    -- "numCandidates",
+    -- "minTerms",
+    "monAnaltyticSpread"
  }
 
-
-
-
-
---------------------------------------------------------
+ 
+--------------------------------------------------------------------------------------------
+-- Tests
+--------------------------------------------------------------------------------------------
 
 TEST ///
 R = QQ[x,y,z]
@@ -731,6 +518,142 @@ elapsedTime multiplicitySequence(codim I, I)
 elapsedTime multiplicitySequence(codim I+1, I)
 elapsedTime multiplicitySequence(analyticSpread I, I)
 multiplicitySequence(I, Strategy => "grGr") === multiplicitySequence(I, Strategy => "genElts")
+
+
+
+--------------------------------------------------------------------------------------------
+-- Old code
+--------------------------------------------------------------------------------------------
+
+grGr = I -> (
+    R := ring I;
+    m := ideal vars R;
+    n := numgens I;
+    d := numgens m;
+    if (I == m) then print "I is m" else assert ( (ideal (1_R) == I:m) == false ); -- To check if the ideal is inside of the maximal ideal m
+    K1 := reesIdeal I; 
+    reesRingI := ring K1;
+    v := "v";
+    R1 := (R) ( monoid[ VariableBaseName => v, Variables => (n)]); -- The source of the first Rees ring with the right ordering
+    phi1 := map(R1, reesRingI, vars R1);
+    IR1 := phi1 sub(I, reesRingI);
+    K1R1 := phi1 K1;
+    G1 := R1 / (IR1 + K1R1);
+    mG1 := sub (phi1 sub(m, reesRingI), G1);
+    K2 := reesIdeal mG1;
+    reesRingm := ring K2;
+    u := "u";
+    R2 := (G1) ( monoid[VariableBaseName => u, Variables => (d)]);
+    phi2 := map(R2, reesRingm, vars R2);
+    mG1R2 := phi2 sub(mG1, reesRingm);
+    K2R2 := phi2 K2;
+    first flattenRing (R2 / (mG1R2 + K2R2))
+    T := R2 / (mG1R2 + K2R2); 
+    modification of T to have the right degrees
+    minimalPresentation T
+    hilbertSeries oo
+)
+
+-- auxiliary method that computes the multiplicity sequence via Hilbert functions
+cSubi = method()
+cSubi (ZZ, Ideal) := ZZ => (i,I) -> (
+    G := grGr I;
+    if not G.cache#?"hilbertSeries" then G.cache#"hilbertSeries" = hilbertSeries(G, Reduce => true);
+    hS := G.cache#"hilbertSeries";
+    -- hilbertS := reduceHilbert hilbertSeries G;
+    poinP := numerator hS;
+    dPoinP := denominator hS;
+    A := ring poinP;
+    -- B := newRing (A, Degrees => {{1,0}, {0,1},{0,0}});
+    B := newRing (A, Degrees => {{1,0}, {0,1}});
+    use B;
+    topP := sub (poinP, B);
+    botP := value toString dPoinP;
+    firVar := (ultimate (flatten, entries (vars B)_{0}))_0;
+    secVar := (ultimate (flatten, entries (vars B)_{1}))_0;
+    powerFirVar := (degree botP)_0;     
+    powerSecVar := (degree botP)_1;     
+    d := dim ring I;
+    a := powerFirVar - (d - i);
+    b := powerSecVar - i;
+    c := topP;
+    for i from 1 to a do (c = diff( firVar, c));
+    c = sub (c, firVar => 1);
+    for i from 1 to b do (c = diff (secVar, c));
+    c = sub (c, secVar => 1); 
+    c = c*(-1)^(a+b);
+    if (c <= 0 or a < 0 or b < 0) then 0 else (sub(c,ZZ) // (a! * b!))
+)
+
+egrGr = method()
+egrGr Ideal := ZZ => I -> (
+   A := grGr I;
+   B := newRing (A, Degrees => splice{ (#gens A) : 1});
+   degree B
+)
+
+hilbertSamuelMultiplicity := I -> ( -- computes e(m, R/I) (need to fix)
+   R := (ring I)/I;
+   k := coefficientRing ring I;
+   maxR := ideal vars R;
+   if (dim R == 0) then return (degree comodule primaryComponent (I, maxR)); -- finite colength case; 
+   genLinComMat := (gens maxR) * random (k^(numgens maxR), k^(dim R));
+   colInGenLinComMat := numcols genLinComMat;
+   genRedIdeal := ideal (0_R);
+   if (dim R == 1) then genRedIdeal = saturate (ideal (0_R), maxR) + ideal genLinComMat  -- the case of dim R/I = 1
+    the case of dim R/I >= 2
+       else genRedIdeal = saturate (ideal submatrix (genLinComMat, {0..(colInGenLinComMat - 2)}), maxR) + ideal genLinComMat;     
+    if (codim genRedIdeal != dim R) then return "Elements chosen are not general. Try again."; 
+    use ring I;
+    the length method doesn't handle the non-graded case, but the degree function does.
+   degree comodule primaryComponent (genRedIdeal,maxR) -- alternatively normalCone?
+)
+
+gHilb = method()
+gHilb (ZZ, MonomialIdeal) := Module => (n, I) -> (
+   R := ring I;
+   Inp1 := sub((intclMonIdeal trim I^(n+1))_0 , R );
+   In := sub((intclMonIdeal trim I^n)_0, R  );
+   HH^0( (In / Inp1) )
+)
+gHilb (ZZ, Ideal) := Module => (n, I) -> ( 
+   J := monomialIdeal I;
+   if J != I then error "Expected a monomial ideal";
+   gHilb (n, J)
+)
+
+multSeq = method()
+multSeq Ideal := List => I -> (
+    hashTable for i from codim I to analyticSpread I list (i, cSubi (i,I))
+)
+
+lengthij, length10ij, length11ij do not seem to be used elsewhere, and have been commented out
+lengthij = method()
+lengthij (ZZ, ZZ, Ideal) := ZZ => (i,j,I) -> (
+    R := ring I;
+    m := ideal vars R;
+    M := (trim (m^i*I^j + I^(j+1)) ) / (  trim (m^(i+1)*I^j + I^(j+1)) );
+    degree (M^1)
+)
+
+length10ij = method()
+length10ij (ZZ, ZZ, Ideal) := ZZ => (i,j,I) -> (
+    R := ring I;
+    m := ideal vars R;
+    M := (trim (I^j ) ) / (  trim (m^(i+1)*I^j + I^(j+1)) );
+    degree (M^1)
+)
+
+length11ij = method()
+length11ij (ZZ,ZZ, Ideal) := ZZ => (i,j,I) -> (
+    L := 0;
+    for k from 0 to j do (L = L + length10ij(i,k,I));
+    sub (L, ZZ)
+)
+
+--------------------------------------------------------------------------------------------
+-- Examples
+--------------------------------------------------------------------------------------------
 
 R = QQ[x,y]
 I = ideal "x2y,xy2"
