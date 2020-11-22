@@ -1,0 +1,32 @@
+doc ///
+    Key
+        monjMult
+        (monjMult, Ideal)
+    Headline
+        j-multiplicity of a monomial ideal
+    Usage
+        monjMult I
+    Inputs
+        I:Ideal
+    Outputs
+        :ZZ
+            the j-multiplicity of I.
+    Description
+        Text
+            Given a monomial ideal I, this function computes the j-multiplicity of I
+	    following the method of Jeffries-Montaño. 
+	    --TODO whether or not include a detailed reference
+        Example
+            R = QQ[x,y]
+            -- I = ideal"xy,yz,zx"
+	    I = ideal"xy5,x2y3,x3y2"
+            --I = ideal"x6,y6,z6,x2yz,xy2z,xyz2"
+            elapsedTime monjMult I
+            -- elapsedTime jMult I
+    	    --TODO an example where monjMult is better than jMult
+    SeeAlso
+        multiplicitySequence
+	jMult
+        monReduction
+	NP
+///

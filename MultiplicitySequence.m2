@@ -295,9 +295,10 @@ doc ///
             {\bf References}:
         Code
             UL {
-                "[1] Nishida-Ulrich, Computing j-multiplicities, J. Pure Appl. Algebra, 214(12) (2010), 2101–2110.",
+                "[0] Achilles-Manaresi, Multiplicities of a bigraded ring and intersection theory. Math. Ann. 309, 573–591 (1997).",
+		"[1] Nishida-Ulrich, Computing j-multiplicities, J. Pure Appl. Algebra, 214(12) (2010), 2101–2110.",
                 "[2] Jeffries-Montaño, The j-multiplicity of monomial ideals, Math. Res. Lett. 20 (2013), no. 4, 729–744.",
-    	    	"[3] Swanson-Huneke, Integral Closure of Ideals, Rings, and Modules, London Mathematical Society Lecture Note Series, vol. 336. Cambridge University Press, Cambridge (2006)",
+    	    	"[3] Swanson-Huneke, Integral Closure of Ideals, Rings, and Modules, London Mathematical Society Lecture Note Series, vol. 336. Cambridge University Press, Cambridge (2006).",
 		"[4] Polini-Trung-Ulrich-Validashti, Multiplicity sequence and integral dependence. Math. Ann. 378 (2020), no. 3-4, 951–969."
             }	    
 	    
@@ -315,17 +316,22 @@ doc ///
         I:Ideal
     Outputs
         :Ring
-            the bigraded ring Gr_m(Gr_I(R)), presented as a quotient of a bigraded polynomial ring with variables names u and v.
+            the bigraded ring Gr_m(Gr_I(R)), presented as a quotient of 
+	    a bigraded polynomial ring with variables names u and v.
     Description
         Text
-	    Given an (grade)-ideal I, this function computes the bi-graded ring Gr_m(Gr_I(R)), where m is the irrelevant maximal ideal.
+	    Given an (grade)-ideal I, this function computes the bi-graded ring Gr_m(Gr_I(R)), 
+	    where m is the irrelevant maximal ideal.
 	    Furthermore, this ring is stored in the cache of I. 
+	    This function is based on the method associatedGradedRing.
         Example
             R = QQ[x,y]
             I = ideal"x2,xy"
             A = grGr I
             describe A
             hilbertSeries A
+    SeeAlso
+    	associatedGradedRing
 ///
 
 doc ///
@@ -345,17 +351,32 @@ doc ///
         I:Ideal
     Outputs
         :HashTable
-            Given a (graded)-ideal I, this function computes 
-	    the multiplicity sequence as defined in Polini-Trung-Ulrich-Validashti.
+	    the multiplicity sequence of I defined as in [0].
     Description
-        Text
+        Text 
+            Given a (graded)-ideal I, this function computes 
+	    the multiplicity sequence as defined in [0].
+	    The getGenElts option uses the general element method 
+	    as in [4] and one can specify the "complexicty" of general
+	    by using the minTerms option. 	    
         Example
-            R = QQ[x,y]
-            I = ideal"x2,xy"
+            R = QQ[x,y,z]
+            I = ideal"xy2,yz3,zx4"
             multiplicitySequence I
+        Text 
+	    The j-multiplicity of I is the l-th number,
+	    where l is the analytic spread of I.	
+        Example
+	    analyticSpread I, jMult I
     SeeAlso
     	jMult
 	monjMult
+    Caveat
+    	There are two running conventions about the order of the sequence. 
+	The current function follows that of [4] and in this setting 
+	the j-multiplicity of I appears at the l-th spot, 
+	where l is the analytic spread of I.	
+	When ideal I is not graded, this function may produce incorrect outcomes.
 ///
 
 doc ///
@@ -382,6 +403,7 @@ doc ///
             I = ideal"x2,xy"
             hilbSequence comodule I
     SeeAlso
+    	hilbertPolynomial
 ///
 
 doc ///
@@ -744,7 +766,6 @@ I = ideal"xyz3, x2y2z, xy2z2, xy2z4x"
 I = ideal" x4y2,  x2yz3"
 I = ideal "x4z, y3z"
 I = ideal "xz, yz"
-
 I = ideal "x,y,z"
 
 (monAnalyticSpread I, analyticSpread I)
