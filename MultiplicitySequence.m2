@@ -1,7 +1,7 @@
 newPackage(
     "MultiplicitySequence",
     Version => "0.5", 
-    Date => "Nov 21, 2020",
+    Date => "Nov 22, 2020",
     Authors => {
         {Name => "Justin Chen", 
             Email => "justin.chen@math.gatech.edu"
@@ -541,12 +541,12 @@ doc ///
 
 doc ///
     Key
-        
-        (monAnaltyticSpread, Ideal)
+        monAnalyticSpread
+        (monAnalyticSpread, Ideal)
     Headline
         the analytic spread of a monomial ideal
     Usage
-        monAnaltyticSpread(I)
+        monAnalyticSpread(I)
     Inputs
         I:MonomialIdeal
     Outputs
@@ -559,7 +559,7 @@ doc ///
         Example
             R = QQ[x,y]
             I = ideal"x2,xy,y3"
-            elapsedTime monAnaltyticSpread I
+            elapsedTime monAnalyticSpread I
     SeeAlso
 	NP
 ///
