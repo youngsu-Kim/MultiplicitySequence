@@ -276,19 +276,18 @@ doc ///
 	    bigraded ring grGr: the associated graded algebra of the extension of $m$ in the associated graded algebra of $I$.
 	    
 	    The importance of this sequence comes from ....
-            
+            --TODO
+	    
 	    This package includes two different ways of computing the multiplicity sequence of an ideal. The first one uses the
-	    definition in terms of Hilbert polynomiasl, while the sencond uses a general element approach based on [] 
+	    definition in terms of Hilbert polynomial, while the sencond uses a general element approach based on  [4]
 	    (see also []).
 	    
         Text
             The package contains the method "jMult" which computes the j-multiplicity of an ideal using Theorem 3.6 
-	    in Nishida-Ulrich (Computing j-multiplicities, J. of Alg 2010).  The function jMult is based on code 
-	    written by H.Schenck and J. Validashti.	  
+	    in [1].  The function jMult is based on code written by H.Schenck and J. Validashti.	  
         Text
             The function monjMult comuputes the j-multiplicity for an monomial ideal by computing the volume of a pyramid. 
-	    This is a result of J. Jeffries and J. Montano, The $j$-Multiplicity of Monomial Ideals, 
-	    to appear in Math. Res. Letters.
+	    This is a result of [2].
         Text
             The second author thanks D. Eisenbud, D. Grayson, and M. Stillman for organizing a Macaulay2 day during the special 
 	    year in commutative algebra 2012-2013 at MSRI where he learned how to write a package.
@@ -296,8 +295,10 @@ doc ///
             {\bf References}:
         Code
             UL {
-                "[1] ", 
-                "[2] "
+                "[1] Nishida-Ulrich, Computing j-multiplicities, J. Pure Appl. Algebra, 214(12) (2010), 2101–2110.",
+                "[2] Jeffries-Montaño, The j-multiplicity of monomial ideals, Math. Res. Lett. 20 (2013), no. 4, 729–744.",
+    	    	"[3] Swanson-Huneke, Integral Closure of Ideals, Rings, and Modules, London Mathematical Society Lecture Note Series, vol. 336. Cambridge University Press, Cambridge (2006)",
+		"[4] Polini-Trung-Ulrich-Validashti, Multiplicity sequence and integral dependence. Math. Ann. 378 (2020), no. 3-4, 951–969."
             }	    
 	    
 ///
@@ -317,6 +318,8 @@ doc ///
             the bigraded ring Gr_m(Gr_I(R)), presented as a quotient of a bigraded polynomial ring with variables names u and v.
     Description
         Text
+	    Given an (grade)-ideal I, this function computes the bi-graded ring Gr_m(Gr_I(R)), where m is the irrelevant maximal ideal.
+	    Furthermore, this ring is stored in the cache of I. 
         Example
             R = QQ[x,y]
             I = ideal"x2,xy"
@@ -342,7 +345,8 @@ doc ///
         I:Ideal
     Outputs
         :HashTable
-            the multiplicity sequence $\{c_i\}$, where $codim I \le$ $i  \le$  $\ell(I)$.
+            Given a (graded)-ideal I, this function computes 
+	    the multiplicity sequence as defined in Polini-Trung-Ulrich-Validashti.
     Description
         Text
         Example
@@ -350,12 +354,15 @@ doc ///
             I = ideal"x2,xy"
             multiplicitySequence I
     SeeAlso
+    	jMult
+	monjMult
 ///
 
 doc ///
     Key
         hilbSequence
         (hilbSequence, Module)
+	--TODO maybe better to call it with the full name hilbertSequence
     Headline
         the Hilbert sequence
     Usage
@@ -364,7 +371,10 @@ doc ///
         I:Ideal
     Outputs
         :HashTable
-            the multiplicity sequence $\{c_i\}$, where $codim I \le$ $i  \le$  $\ell(I)$.
+            Given a multi-graded ideal I, this function computes 
+	    the coefficients of the multi-graded Hilbert polynomial 
+	    of the factor ring of I in the Macaulay expansion.
+	    --TODO is the Macaulay expansion defined?
     Description
         Text
         Example
@@ -389,6 +399,9 @@ doc ///
             the j-multiplicity of I
     Description
         Text
+	    Given an ideal I, this function computes the j-multiplicity of I
+	    following the method of Nishida-Ulrich. 
+	    --TODO whether or not include a detailed reference	    
         Example
             R = QQ[x,y,z]
             I = ideal"xy,yz,zx"
