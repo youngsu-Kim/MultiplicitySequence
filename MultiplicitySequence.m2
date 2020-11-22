@@ -307,9 +307,7 @@ doc ///
                 "[JM13] Jeffries-Montaño, The j-multiplicity of monomial ideals, Math. Res. Lett. 20 (2013), no. 4, 729–744.",
 		"[NU10] Nishida-Ulrich, Computing j-multiplicities, J. Pure Appl. Algebra, 214(12) (2010), 2101–2110.",
 		"[PTUV20] Polini-Trung-Ulrich-Validashti, Multiplicity sequence and integral dependence. Math. Ann. 378 (2020), no. 3-4, 951–969.",
-    	    	"[SH06] Swanson-Huneke, Integral Closure of Ideals, Rings, and Modules, London Mathematical Society Lecture Note Series, vol. 336. Cambridge University Press, Cambridge (2006).".
-	
-	
+    	    	"[SH06] Swanson-Huneke, Integral Closure of Ideals, Rings, and Modules, London Mathematical Society Lecture Note Series, vol. 336. Cambridge University Press, Cambridge (2006)."
             }	    
 	    
 ///
@@ -543,7 +541,7 @@ doc ///
 
 doc ///
     Key
-        monAnaltyticSpread
+        
         (monAnaltyticSpread, Ideal)
     Headline
         the analytic spread of a monomial ideal
@@ -817,3 +815,7 @@ hilbertPolynomial I
 R = QQ[x_1..x_3, DegreeRank => 3]
 I = monomialIdeal(x_1^2, x_1*x_2, x_2^3, x_1*x_3^3) -- Ex. 2.4 in Miller-Sturmfels
 hilbertSeries I -- Ex 2.13 in Miller-Sturmfels
+
+
+----------
+installPackage"MultiplicitySequence"
