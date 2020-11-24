@@ -14,6 +14,7 @@ newPackage(
         }
     },
     Headline => "computing the multiplicity sequence of an ideal",
+    AuxiliaryFiles => false,
     DebuggingMode => false,
     PackageExports => {
         "ReesAlgebra", 
@@ -41,7 +42,6 @@ export {
 
 -- installMinprimes() -- for MinimalPrimes.m2
 
--- randomSubset = method()
 randomSubset := (L, k) -> (
     i := random(#L);
     if k == 1 then {L#i} else {L#i} | randomSubset(L_(delete(i, toList(0..<#L))), k-1)
@@ -108,6 +108,7 @@ multiplicitySequence (ZZ, Ideal) := ZZ => opts -> (j, I) -> (
 -- multiplicitySequence Ideal := Sequence => opts -> I -> hashTable toList apply(codim I..analyticSpread I, j -> {j, multiplicitySequence(j, I, opts)})
 
 -- computes the bigraded associated graded algebra with respect to m and I
+-- TODO: user-specified variable names?
 grGr = method()
 grGr Ideal := Ring => I -> (
     if I.cache#?"gr_mGr_I" then I.cache#"gr_mGr_I" else I.cache#"gr_mGr_I" = (
@@ -127,6 +128,7 @@ hilbSequence Module := HashTable => M -> (
     hashTable apply(b, p -> (s - p#0, p#1))
 )
 hilbSequence Ring := HashTable => R -> hilbSequence R^1
+hilbSequence Ideal := HashTable => I -> hilbSequence comodule I
 
 multiplicitySequence Ideal := HashTable => opts -> I -> (
     H := hilbSequence grGr I;
@@ -189,7 +191,6 @@ monReduction Ideal := MonomialIdeal => I -> (
 
 --- from a matrix M extract the rows where all the entries are not zero
 isBddFacet := (n, M) -> (
-    --- r := rank target M; --- # of rows
     s := rank source M; --- # of columns
     mutableM := mutableIdentity (ZZ,s); --- row as a vector
     for i from 0 to (s - 1) do (mutableM_(i,i) = M_(n,i));
@@ -223,13 +224,13 @@ monAnalyticSpread Ideal := ZZ => I -> (
     Mm := M_0;
     Mv := M_1;
     r := rank target Mm;  --- # of rows
-    -- s := rank source Mm;  --- # of columns
-    monAS := 0;
-    for p from 0 to r-1 do (
-        face := intersection (Mm, Mv, Mm^{p}, Mv^{p});
-        monAS = max(monAS,dim convexHull vertices face);      
-    );
-    sub(monAS, ZZ)+1
+    1 + max apply(r, p -> dim convexHull vertices intersection (Mm, Mv, Mm^{p}, Mv^{p}))
+    -- monAS := 0;
+    -- for p from 0 to r-1 do (
+        -- face := intersection (Mm, Mv, Mm^{p}, Mv^{p});
+        -- monAS = max(monAS,dim convexHull vertices face);      
+    -- );
+    -- 1 + monAS
 )
 
 -- monomial j-multiplicity
@@ -237,15 +238,12 @@ monAnalyticSpread Ideal := ZZ => I -> (
 monjMult = method()
 monjMult Ideal := ZZ => I -> (
     if I != monomialIdeal I then error "Expected a monomial ideal";
-    -- if ((isMonomialIdeal III) == false) then (print "The input is not a monomial ideal", break);
-    -- II := III; --- unnecssary one one could change every II to III
     d := dim ring I;
     P := NP(I);
     M := halfspaces P;
     Mm := M_0;
     Mv := M_1;
     r := rank target Mm;  --- # of rows
-    -- s := rank source Mm;  --- # of columns
     monj := 0;
     for p from 0 to r-1 do (
     if isBddFacet(p, Mm) then (
@@ -269,35 +267,41 @@ doc ///
         multiplicity sequence of ideals
     Description
         Text
-	    The goal of this package is to compute the multiplicity sqeuence of an ideal $I$ in a standard graded  
-	    equidimensional ring over a field $(R,m,k)$, where $m = R_+$. The multiplicity sequence is a generalization 
-	    of the Hilbert-Samuel multiplicity for ideals that are not necessarily m-primary. This sequence is 
-	    obtained by considering the second sum transform of the Hilbert polynomial in two variables  of the 
-	    bigraded ring grGr: the associated graded algebra of the extension of $m$ in the associated graded algebra of $I$.
-	    
-	    The multiplicity sequence was defined by Achiles and Manaresi in intersection theory [AM97]. Its importance comes from
-	    the applications to problems in singularity theory (Segre numbers [AR01]) and commutative algebra (numerical 
-	     characterization of integral dependence [PTUV20, SH06]). Indeed, in [PTUV20] the authors show that in a equidimensional and universally
-	    catenary Noetherian local ring, two ideals $J\subset I$ have the same integral closure if and only if they have the
-	    same multiplicity sequence.
-    
-	    
-	    This package includes two different ways of computing the multiplicity sequence of an ideal. The first one uses the
-	    definition in terms of Hilbert polynomial, while the sencond uses a general element approach based on [AM97]
-	    (see also [PTUV20]). The package also contains a method that computes all of the coefficients of the Hilbert polynomial
-	    of a multi-graded module. These numbers can be seen as the generalized version Hilbert coefficients of not necessarily 
-	    m-primary ideals.
+	    The goal of this package is to compute the multiplicity sequence of an ideal $I$ 
+            in a standard graded equidimensional ring over a field $(R,m,k)$, where $m = R_+$. 
+            The multiplicity sequence is a generalization of the Hilbert-Samuel multiplicity for ideals
+            that are not necessarily m-primary. This sequence is obtained by considering the second
+            sum transform of the Hilbert polynomial in two variables of the bigraded ring grGr,
+            which is the associated graded algebra of the extension of $m$ in the associated 
+            graded algebra of $I$.
+
+	    The multiplicity sequence was defined by Achiles and Manaresi in intersection theory 
+            [AM97]. Its importance comes from applications to problems in singularity theory 
+            (Segre numbers [AR01]) and commutative algebra (numerical  characterization of 
+            integral dependence [PTUV20, SH06]). Indeed, in [PTUV20] the authors show that in 
+            a equidimensional and universally catenary Noetherian local ring, two ideals $J\subset I$
+            have the same integral closure if and only if they have the same multiplicity sequence.
+
+	    This package includes two different ways of computing the multiplicity sequence of an
+            ideal. The first one uses the definition in terms of Hilbert polynomials, while the second
+            uses a general element approach based on [AM97] (see also [PTUV20]). The package
+            also contains a method that computes all of the coefficients of the Hilbert polynomial
+	    of a multi-graded module. These numbers can be seen as the generalizations of 
+            Hilbert coefficients for ideals that are not necessarily m-primary.
 	    
         Text
-            The package contains the method "jMult" which computes the j-multiplicity of an ideal using Theorem 3.6 
-	    in [NU10].  The function jMult is based on code written by H.Schenck and J. Validashti.	  
+            One of the terms of the multiplicity sequence is the j-multiplicity, another 
+            important invariant of an ideal in multiplicity theory.
+            This package also contains a method {\tt jMult} which computes the j-multiplicity of an 
+            ideal using Theorem 3.6 in [NU10], based on code written by H. Schenck and J. Validashti.
+            There is also a method {\tt monjMult} which computes the j-multiplicity of a monomial 
+            ideal via polyhedral volume computations, using a result of [JM13]. The package also
+            includes several functions related to integral dependence of monomial ideals,
+            such as Newton polyhedron, analytic spread, and monomial reductions.
         Text
-            The function monjMult comuputes the j-multiplicity for an monomial ideal by computing the volume of a pyramid. 
-	    This is a result of [JM13]. The package also includes several methods that compute related to integral dependence
-	    of monomial ideals, such as, Newton polyhedron, analityc spread, and monomial reductons.
-        Text
-            The second author thanks D. Eisenbud, D. Grayson, and M. Stillman for organizing a Macaulay2 day during the special 
-	    year in commutative algebra 2012-2013 at MSRI where he learned how to write a package.
+            The second author thanks D. Eisenbud, D. Grayson, and M. Stillman for organizing a
+            Macaulay2 day during the special year in commutative algebra 2012-2013 at MSRI where
+            he learned how to write a package.
     	Text
             {\bf References}:
         Code
@@ -308,8 +312,7 @@ doc ///
 		"[NU10] Nishida-Ulrich, Computing j-multiplicities, J. Pure Appl. Algebra, 214(12) (2010), 2101–2110.",
 		"[PTUV20] Polini-Trung-Ulrich-Validashti, Multiplicity sequence and integral dependence. Math. Ann. 378 (2020), no. 3-4, 951–969.",
     	    	"[SH06] Swanson-Huneke, Integral Closure of Ideals, Rings, and Modules, London Mathematical Society Lecture Note Series, vol. 336. Cambridge University Press, Cambridge (2006)."
-            }	    
-	    
+            }
 ///
 
 doc ///
@@ -324,14 +327,14 @@ doc ///
         I:Ideal
     Outputs
         :Ring
-            the bigraded ring Gr_m(Gr_I(R)), presented as a quotient of 
-	    a bigraded polynomial ring with variables names u and v.
+            the bigraded ring Gr_m(Gr_I(R))
     Description
         Text
-	    Given an (grade)-ideal I, this function computes the bi-graded ring Gr_m(Gr_I(R)), 
-	    where m is the irrelevant maximal ideal.
-	    Furthermore, this ring is stored in the cache of I. 
-	    This function is based on the method associatedGradedRing.
+	    Given a (graded)-ideal I in a (graded)-local ring (R,m), 
+            this function computes the bi-graded ring Gr_m(Gr_I(R)), presented as a 
+            quotient of a bigraded polynomial ring with variables names u and v.
+	    After being computed once, this ring is stored in the cache of I.
+	    This function is based on the method normalCone.
         Example
             R = QQ[x,y]
             I = ideal"x2,xy"
@@ -339,34 +342,37 @@ doc ///
             describe A
             hilbertSeries A
     SeeAlso
-    	associatedGradedRing
+    	normalCone
 ///
 
 doc ///
     Key
         multiplicitySequence
         (multiplicitySequence, Ideal)
+        (multiplicitySequence, ZZ, Ideal)
         minTerms
         [multiplicitySequence, minTerms]
         numCandidates
         [multiplicitySequence, numCandidates]
         [multiplicitySequence, Strategy]
     Headline
-        the multiplicity sequence
+        the multiplicity sequence of an ideal
     Usage
         multiplicitySequence I
+        multiplicitySequence(i, I)
     Inputs
         I:Ideal
+        i:ZZ
     Outputs
         :HashTable
-	    the multiplicity sequence of I defined as in [0].
+	    the multiplicity sequence of I
     Description
         Text 
             Given a (graded)-ideal I, this function computes 
 	    the multiplicity sequence as defined in [0].
-	    The getGenElts option uses the general element method 
-	    as in [4] and one can specify the "complexicty" of general
-	    by using the minTerms option. 	    
+	    Specifying {\tt Strategy => "genElts"} will use the general element method 
+	    as in [4]: one can specify the "complexity" of the general elements
+	    by using the option {\tt minTerms}.
         Example
             R = QQ[x,y,z]
             I = ideal"xy2,yz3,zx4"
@@ -376,40 +382,67 @@ doc ///
 	    where l is the analytic spread of I.	
         Example
 	    analyticSpread I, jMult I
+        Text
+            Note that this function does not require the ambient ring to be a 
+            polynomial ring:
+        Example
+            S = QQ[a..d]
+            J = ideal (a*d - b*c, c^2-b*d)
+            R = S/J
+            I = ideal(R_0^2,R_0*R_1,R_1^3)
+            multiplicitySequence I
+        Text
+            One can specify a particular element in the multiplicity sequence:
+        Example
+            multiplicitySequence_2 I
+    Caveat
+    	There are two conventions in use about the order of the sequence. 
+	The current function follows that of [4] and in this setting 
+	the j-multiplicity of I appears at the l-th spot, 
+	where l is the analytic spread of I.
+        -- TODO: other convention?
+	If the ideal I is not graded, this function may produce incorrect results.
     SeeAlso
     	jMult
 	monjMult
-    Caveat
-    	There are two running conventions about the order of the sequence. 
-	The current function follows that of [4] and in this setting 
-	the j-multiplicity of I appears at the l-th spot, 
-	where l is the analytic spread of I.	
-	When ideal I is not graded, this function may produce incorrect outcomes.
 ///
 
 doc ///
     Key
         hilbSequence
         (hilbSequence, Module)
+        (hilbSequence, Ring)
+        (hilbSequence, Ideal)
 	--TODO maybe better to call it with the full name hilbertSequence
     Headline
-        the Hilbert sequence
+        the Hilbert sequence of a multi-graded module
     Usage
-        hilbSequence I
+        hilbSequence M
     Inputs
-        I:Ideal
+        M:Module
+            or @TO ideal@
     Outputs
         :HashTable
-            Given a multi-graded ideal I, this function computes 
-	    the coefficients of the multi-graded Hilbert polynomial 
-	    of the factor ring of I in the Macaulay expansion.
-	    --TODO is the Macaulay expansion defined?
+            the Hilbert sequence of M
     Description
         Text
+            Given a multi-graded module M, this function computes 
+	    the coefficients of the multi-graded Hilbert polynomial 
+	    of M in its Macaulay expansion. If the input is an ideal I, 
+            then the Hilbert sequence of {\tt comodule I} is returned.
+            --TODO is the Macaulay expansion defined?
         Example
-            R = QQ[x,y]
-            I = ideal"x2,xy"
-            hilbSequence comodule I
+            R = QQ[a..e, DegreeRank => 5]
+            I = monomialIdeal "de,abe,ace,abcd"
+            hilbSequence I
+        Text
+            One can read off the Hilbert polynomial from the Hilbert sequence,
+            which can be verified for singly-graded modules:
+        Example
+            R = QQ[a..e]
+            I = monomialIdeal "de,abe,ace,abcd"
+            hilbSequence I
+            hilbertPolynomial I
     SeeAlso
     	hilbertPolynomial
 ///
@@ -419,7 +452,7 @@ doc ///
         jMult
         (jMult, Ideal)
     Headline
-        the j-multiplicity
+        the j-multiplicity of an ideal
     Usage
         jMult(I)
     Inputs
@@ -430,13 +463,13 @@ doc ///
     Description
         Text
 	    Given an ideal I, this function computes the j-multiplicity of I
-	    following the method of Nishida-Ulrich. 
-	    --TODO whether or not include a detailed reference	    
+	    following the method of Nishida-Ulrich.
         Example
             R = QQ[x,y,z]
             I = ideal"xy,yz,zx"
             elapsedTime jMult I
             elapsedTime monjMult I
+            elapsedTime multiplicitySequence I
     SeeAlso
         multiplicitySequence
         monjMult
@@ -458,16 +491,12 @@ doc ///
     Description
         Text
             Given a monomial ideal I, this function computes the j-multiplicity of I
-	    following the method of Jeffries-Montaño. 
-	    --TODO whether or not include a detailed reference
+	    following the method of Jeffries-Montaño.
         Example
             R = QQ[x,y]
-            -- I = ideal"xy,yz,zx"
-	    I = ideal"xy5,x2y3,x3y2"
-            --I = ideal"x6,y6,z6,x2yz,xy2z,xyz2"
+	    I = (ideal"xy5,x2y3,x3y2")^4
             elapsedTime monjMult I
-            -- elapsedTime jMult I
-    	    --TODO an example where monjMult is better than jMult
+            elapsedTime jMult I
     SeeAlso
         multiplicitySequence
 	jMult
@@ -528,10 +557,12 @@ doc ///
         Example
             R = QQ[x,y]
             I = ideal"x2,xy,y3"
-            elapsedTime monReduction I
-	    -- TODO -- Add an example of a monomial reduction which is not a minimal reduction
+            J = monReduction I
+            J == I
+            K = minimalReduction I
+            degree J, degree K
         Text
-	    This function works as follows: we find the extremal rays of NP(I), 
+	    This function works by finding the extremal rays of NP(I),
 	    which correspond to the minimal generators of the monomial reduction of I. 
     Caveat
 	As seen above, a monomial minimal reduction need not be a minimal reduction.
@@ -554,8 +585,8 @@ doc ///
             the analytic spread of I
     Description
         Text
-	    Given a monomial ideal I, this function computes a the analytic spread of I
-	    as one plus the maximum dimension of a bounded facet of its Newton Polynedron.
+	    Given a monomial ideal I, this function computes the analytic spread of I
+	    as one more than the maximal dimension of a bounded facet of its Newton polyhedron.
         Example
             R = QQ[x,y]
             I = ideal"x2,xy,y3"
@@ -565,14 +596,7 @@ doc ///
 ///
 
 undocumented {
-    --"NP",
-    --"monReduction",
-    -- "gHilb",
-    -- "hilbertSamuelMultiplicity",
-    "getGenElts",
-    -- "numCandidates",
-    -- "minTerms",
-    --"monAnaltyticSpread"
+    "getGenElts"
  }
 
  
@@ -604,6 +628,18 @@ R = QQ[x_1..x_9]
 M = genericMatrix(R,3,3)
 I = minors(2, M)
 assert(multiplicitySequence I === hashTable {(4, 6), (5, 12), (6, 12), (7, 6), (8, 3), (9, 2)})
+///
+
+TEST ///
+R = QQ[x,y]
+I = ideal"x2,xy,y3"
+assert(I == monReduction I)
+assert(monAnalyticSpread I == analyticSpread I)
+assert(monjMult I == 5)
+assert(jMult I == monjMult I)
+assert(multiplicitySequence(analyticSpread I, I) == jMult I)
+P = NP I
+assert(fVector P == {3,4,1})
 ///
 
 end--
