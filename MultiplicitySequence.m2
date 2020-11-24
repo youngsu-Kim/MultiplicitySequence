@@ -1,7 +1,7 @@
 newPackage(
     "MultiplicitySequence",
     Version => "0.5", 
-    Date => "Nov 21, 2020",
+    Date => "Nov 22, 2020",
     Authors => {
         {Name => "Justin Chen", 
             Email => "justin.chen@math.gatech.edu"
@@ -275,19 +275,26 @@ doc ///
 	    obtained by considering the second sum transform of the Hilbert polynomial in two variables  of the 
 	    bigraded ring grGr: the associated graded algebra of the extension of $m$ in the associated graded algebra of $I$.
 	    
-	    The importance of this sequence comes from ....
-            --TODO
+	    The multiplicity sequence was defined by Achiles and Manaresi in intersection theory [AM97]. Its importance comes from
+	    the applications to problems in singularity theory (Segre numbers [AR01]) and commutative algebra (numerical 
+	     characterization of integral dependence [PTUV20, SH06]). Indeed, in [PTUV20] the authors show that in a equidimensional and universally
+	    catenary Noetherian local ring, two ideals $J\subset I$ have the same integral closure if and only if they have the
+	    same multiplicity sequence.
+    
 	    
 	    This package includes two different ways of computing the multiplicity sequence of an ideal. The first one uses the
-	    definition in terms of Hilbert polynomial, while the sencond uses a general element approach based on  [4]
-	    (see also []).
+	    definition in terms of Hilbert polynomial, while the sencond uses a general element approach based on [AM97]
+	    (see also [PTUV20]). The package also contains a method that computes all of the coefficients of the Hilbert polynomial
+	    of a multi-graded module. These numbers can be seen as the generalized version Hilbert coefficients of not necessarily 
+	    m-primary ideals.
 	    
         Text
             The package contains the method "jMult" which computes the j-multiplicity of an ideal using Theorem 3.6 
-	    in [1].  The function jMult is based on code written by H.Schenck and J. Validashti.	  
+	    in [NU10].  The function jMult is based on code written by H.Schenck and J. Validashti.	  
         Text
             The function monjMult comuputes the j-multiplicity for an monomial ideal by computing the volume of a pyramid. 
-	    This is a result of [2].
+	    This is a result of [JM13]. The package also includes several methods that compute related to integral dependence
+	    of monomial ideals, such as, Newton polyhedron, analityc spread, and monomial reductons.
         Text
             The second author thanks D. Eisenbud, D. Grayson, and M. Stillman for organizing a Macaulay2 day during the special 
 	    year in commutative algebra 2012-2013 at MSRI where he learned how to write a package.
@@ -295,11 +302,12 @@ doc ///
             {\bf References}:
         Code
             UL {
-                "[0] Achilles-Manaresi, Multiplicities of a bigraded ring and intersection theory. Math. Ann. 309, 573–591 (1997).",
-		"[1] Nishida-Ulrich, Computing j-multiplicities, J. Pure Appl. Algebra, 214(12) (2010), 2101–2110.",
-                "[2] Jeffries-Montaño, The j-multiplicity of monomial ideals, Math. Res. Lett. 20 (2013), no. 4, 729–744.",
-    	    	"[3] Swanson-Huneke, Integral Closure of Ideals, Rings, and Modules, London Mathematical Society Lecture Note Series, vol. 336. Cambridge University Press, Cambridge (2006).",
-		"[4] Polini-Trung-Ulrich-Validashti, Multiplicity sequence and integral dependence. Math. Ann. 378 (2020), no. 3-4, 951–969."
+                "[AM97] Achilles-Manaresi, Multiplicities of a bigraded ring and intersection theory. Math. Ann. 309, 573–591 (1997).",
+		"[AR01] Achilles-Rams: Intersection numbers, Segre numbers and generalized Samuel multiplicities. Arch. Math. (Basel) 77, 391–398 (2001)",
+                "[JM13] Jeffries-Montaño, The j-multiplicity of monomial ideals, Math. Res. Lett. 20 (2013), no. 4, 729–744.",
+		"[NU10] Nishida-Ulrich, Computing j-multiplicities, J. Pure Appl. Algebra, 214(12) (2010), 2101–2110.",
+		"[PTUV20] Polini-Trung-Ulrich-Validashti, Multiplicity sequence and integral dependence. Math. Ann. 378 (2020), no. 3-4, 951–969.",
+    	    	"[SH06] Swanson-Huneke, Integral Closure of Ideals, Rings, and Modules, London Mathematical Society Lecture Note Series, vol. 336. Cambridge University Press, Cambridge (2006)."
             }	    
 	    
 ///
@@ -531,6 +539,31 @@ doc ///
 	NP
 ///
 
+doc ///
+    Key
+        monAnalyticSpread
+        (monAnalyticSpread, Ideal)
+    Headline
+        the analytic spread of a monomial ideal
+    Usage
+        monAnalyticSpread(I)
+    Inputs
+        I:MonomialIdeal
+    Outputs
+        :MonomialIdeal
+            the analytic spread of I
+    Description
+        Text
+	    Given a monomial ideal I, this function computes a the analytic spread of I
+	    as one plus the maximum dimension of a bounded facet of its Newton Polynedron.
+        Example
+            R = QQ[x,y]
+            I = ideal"x2,xy,y3"
+            elapsedTime monAnalyticSpread I
+    SeeAlso
+	NP
+///
+
 undocumented {
     --"NP",
     --"monReduction",
@@ -539,7 +572,7 @@ undocumented {
     "getGenElts",
     -- "numCandidates",
     -- "minTerms",
-    "monAnaltyticSpread"
+    --"monAnaltyticSpread"
  }
 
  
@@ -791,3 +824,6 @@ M1 = comodule ideal(random({1,2},P),random({2,3},P),random({5,2},P));
 elapsedTime multiHilbertPolynomial M1 -- == 44, ~1.4 seconds
 hilbSequence M1
 -- Note: this has a key {0,3}, while value for key {1,1} is 44
+
+----------
+installPackage"MultiplicitySequence"
