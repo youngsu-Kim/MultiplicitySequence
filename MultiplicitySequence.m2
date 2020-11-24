@@ -778,7 +778,16 @@ R = QQ[a..e]
 R = QQ[a..e,DegreeRank => 5]
 I = monomialIdeal "de,abe,ace,abcd" -- Ex. 1.14 in Miller-Sturmfels
 hilbertPolynomial I
+hilbertPolynomial(I, Projective => false)
 
 R = QQ[x_1..x_3, DegreeRank => 3]
 I = monomialIdeal(x_1^2, x_1*x_2, x_2^3, x_1*x_3^3) -- Ex. 2.4 in Miller-Sturmfels
 hilbertSeries I -- Ex 2.13 in Miller-Sturmfels
+
+
+needsPackage "CorrespondenceScrolls"
+P = productOfProjectiveSpaces{1,2}
+M1 = comodule ideal(random({1,2},P),random({2,3},P),random({5,2},P));
+elapsedTime multiHilbertPolynomial M1 -- == 44, ~1.4 seconds
+hilbSequence M1
+-- Note: this has a key {0,3}, while value for key {1,1} is 44
