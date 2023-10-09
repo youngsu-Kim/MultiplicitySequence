@@ -312,13 +312,13 @@ doc ///
             The goal of this package is to compute the 
             @TO2{multiplicitySequence, "multiplicity sequence"}@ of 
             an ideal $I$ in a standard graded equidimensional ring over a field 
-            $(R,m,k)$, where $m = R_+$. The multiplicity sequence is a
+            $(R,\mathfrak{m},k)$, where $\mathfrak{m} = R_+$. The multiplicity sequence is a
             generalization of the Hilbert-Samuel multiplicity for ideals that 
-            are not necessarily m-primary. This sequence is obtained as the
+            are not necessarily $\mathfrak{m}$-primary. This sequence is obtained as the
             leading terms of the second sum transform of the bivariate Hilbert
             polynomial of $G$, where 
             $G = \operatorname{gr}(\mathfrak{m} \operatorname{gr}(I))$
-            is the associated graded ring of the extension of $m$ in the
+            is the associated graded ring of the extension of $\mathfrak{m}$ in the
             associated graded ring of $I$ (see @TO tangentNormalCone@).
 
             The multiplicity sequence was defined by Achiles and Manaresi in
@@ -337,7 +337,7 @@ doc ///
             also contains a method that computes all of the coefficients of the
             Hilbert polynomial of a multi-graded module. These numbers can be
             seen as the generalizations of Hilbert coefficients for ideals that
-            are not necessarily m-primary.
+            are not necessarily $\mathfrak{m}$-primary.
 	    
         Text
             One of the terms of the multiplicity sequence is the j-multiplicity,
@@ -394,12 +394,12 @@ doc ///
             the bigraded ring $\operatorname{gr}(\mathfrak{m} \operatorname{gr}(I))$
     Description
         Text
-            Given a (graded) ideal I in a (graded-)local ring (R,m), 
+            Given a (graded) ideal $I$ in a (graded-)local ring $(R,\mathfrak{m})$, 
             this function computes the bi-graded ring 
             $G = \operatorname{gr}(\mathfrak{m} \operatorname{gr}(I))$, 
             presented as a quotient of a bigraded polynomial ring.
             After being computed once, this ring is stored in the cache 
-            of I. This function is based on the method @TO normalCone@.
+            of $I$. This function is based on the method @TO normalCone@.
         Example
             R = QQ[x,y]
             I = ideal"x2,xy"
@@ -453,7 +453,7 @@ doc ///
 	    the multiplicity sequence of I
     Description
         Text 
-            Given a (graded) ideal I, this function computes 
+            Given a (graded) ideal $I$, this function computes 
             the multiplicity sequence as defined in [0].
             Specifying {\tt Strategy => "generalElements"} will use the general element
             method as in [4].
@@ -462,8 +462,8 @@ doc ///
             I = ideal"xy2,yz3,zx4"
             multiplicitySequence I
         Text 
-            The @TO2{jMultiplicity, "j-multiplicity"}@ of I is the l-th number,
-            where l is the @TO2{analyticSpread, "analytic spread"}@ of I.	
+            The @TO2{jMultiplicity, "j-multiplicity"}@ of $I$ is the $\ell$-th number,
+            where $\ell$ is the @TO2{analyticSpread, "analytic spread"}@ of $I$.	
         Example
             analyticSpread I, jMultiplicity I
         Text
@@ -532,10 +532,10 @@ doc ///
     Caveat
     	There are two conventions in use about the order of the sequence. 
         The current function follows that of [4] and in this setting 
-        the j-multiplicity of I appears at the l-th spot, 
-        where l is the analytic spread of I.
+        the j-multiplicity of $I$ appears at the $\ell$-th spot, 
+        where $\ell$ is the analytic spread of $I$.
         -- TODO: other convention?
-        If the ideal I is not graded, this function may produce incorrect 
+        If the ideal $I$ is not graded, this function may produce incorrect 
         results.
     SeeAlso
     	jMultiplicity
@@ -564,10 +564,10 @@ doc ///
             of M
     Description
         Text
-            Given an $\NN^p$-graded module M, this function computes 
+            Given an $\NN^p$-graded module $M$, this function computes 
             the coefficients of the pth sum transform of the $\NN^p$-graded 
-            Hilbert function of M in its Macaulay expansion. If the input 
-            is an ideal I, then the Hilbert sequence of @TO comodule@ $I$ is 
+            Hilbert function of $M$ in its Macaulay expansion. If the input 
+            is an ideal $I$, then the Hilbert sequence of @TO comodule@ $I$ is 
             returned.
             --TODO is the Macaulay expansion defined?
             The output is a @TO HilbertSequence@, which is a type of 
@@ -592,7 +592,7 @@ doc ///
             (default value true).
             This is particularly convenient in relation to the 
             @TO2{multiplicitySequence, "multiplicity sequence"}@: namely,
-            the multiplicity sequence of I appears as the top row of the table
+            the multiplicity sequence of $I$ appears as the top row of the table
             for the Hilbert sequence of 
             $\operatorname{gr}(\mathfrak{m} \operatorname{gr}(I))$.
         Example
@@ -628,7 +628,7 @@ doc ///
             the j-multiplicity of I
     Description
         Text
-            Given an ideal I, this function computes the j-multiplicity of I
+            Given an ideal $I$, this function computes the j-multiplicity of $I$
             following the method of Nishida-Ulrich.
         Example
             R = QQ[x,y,z]
@@ -638,8 +638,8 @@ doc ///
             jMultiplicity I
             multiplicitySequence I
         Text
-            If the ideal I is a monomial ideal, this function computes the 
-            j-multiplicity of I following the method of Jeffries-Montaño.
+            If the ideal $I$ is a monomial ideal, this function computes the 
+            j-multiplicity of $I$ following the method of Jeffries-Montaño.
         Example
             R = QQ[x,y]
             I = (monomialIdeal "xy5,x2y3,x3y2")^4
@@ -665,15 +665,15 @@ doc ///
             the Newton polyhedron of the monomial ideal I
     Description
         Text
-            Given a monomial ideal I in $k[x_1,\dots,x_d]$, the convex hull 
-            in $\mathbb{R}^d$ of the set of exponents of all monomials in I 
-            is called the Newton polyhedron of I. 
+            Given a monomial ideal $I$ in $k[x_1,\dots,x_d]$, the convex hull 
+            in $\mathbb{R}^d$ of the set of exponents of all monomials in $I$ 
+            is called the Newton polyhedron of $I$. 
         Example
             R = QQ[x,y,z]
             I = ideal"x2,y3,yz"
             P = newtonPolyhedron I
         Text
-            Note that a monomial is in the integral closure of I 
+            Note that a monomial is in the integral closure of $I$ 
             if and only if its exponent vector is in newtonPolyhedron(I).
         Example
             J = integralClosure(I,1)
@@ -698,9 +698,9 @@ doc ///
             the minimal monomial reduction of I
     Description
         Text
-            Given a monomial ideal I, this function computes a monomial 
-            reduction of I (i.e. a reduction of I which is a monomial ideal), 
-            which is inclusion-wise minimal among all monomial reductions of I.
+            Given a monomial ideal $I$, this function computes a monomial 
+            reduction of $I$ (i.e. a reduction of I which is a monomial ideal), 
+            which is inclusion-wise minimal among all monomial reductions of $I$.
         Example
             R = QQ[x,y]
             I = monomialIdeal"x2,xy,y3"
@@ -711,7 +711,7 @@ doc ///
         Text
             This function works by finding the extremal rays of 
             newtonPolyhedron(I), which correspond to the minimal generators of
-            the monomial reduction of I.
+            the monomial reduction of $I$.
     Caveat
         As seen above, a monomial minimal reduction need not be a minimal
         reduction.
@@ -733,8 +733,8 @@ doc ///
             the analytic spread of I
     Description
         Text
-            Given a monomial ideal I, this function computes the analytic spread
-            of I as one more than the maximal dimension of a bounded facet of 
+            Given a monomial ideal $I$, this function computes the analytic spread
+            of $I$ as one more than the maximal dimension of a bounded facet of 
             its Newton polyhedron.
         Example
             R = QQ[x,y]
