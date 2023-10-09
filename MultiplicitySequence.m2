@@ -1,7 +1,7 @@
 newPackage(
     "MultiplicitySequence",
-    Version => "0.8.0", 
-    Date => "Oct 8, 2023",
+    Version => "0.8.1", 
+    Date => "Oct 9, 2023",
     Authors => {
         {Name => "Justin Chen", 
             Email => "jchen646@gatech.edu"
@@ -27,7 +27,8 @@ newPackage(
 )
 
 export {
-    "grGr",
+    "tangentNormalCone",
+    "PrimaryGradingIdeal",
     "multiplicitySequence",
     "HilbertSequence",
     "hilbertSequence",
@@ -37,7 +38,11 @@ export {
     "DoSaturate",
     "jMultiplicity",
     "monomialReduction",
-    "newtonPolyhedron"
+    "newtonPolyhedron",
+    "grGr",
+    "jMult",
+    "NP",
+    "monReduction"
  }
 
 -- Imported functions
@@ -76,19 +81,22 @@ getGeneralElements (Ideal, ZZ) := List => opts -> (I, n) -> (
             );
             t = t+1;
         );
-        if foundNext then J = ideal values result else error "Could not find general element. Consider running this function again, e.g. with a higher value of MinTerms";
+        if foundNext then J = ideal values result else error "Could not find general element. Consider running this function again, e.g. with a higher value of NumCandidates";
     );
     apply(n, i -> result#i)
 )
 
 -- computes the bigraded associated graded algebra with respect to m and I
-grGr = method(Options => {Variables => {"u", "v"}})
-grGr Ideal := Ring => opts -> I -> (
-    if I.cache#?"gr_mGr_I" then I.cache#"gr_mGr_I" else I.cache#"gr_mGr_I" = (
+tangentNormalCone = method(Options => {Variables => {"u", "v"}, PrimaryGradingIdeal => null})
+tangentNormalCone Ideal := Ring => opts -> I -> (
+    if any(gens ring I, v -> instance(baseName v, IndexedVariable) and member(toString first baseName v, opts.Variables)) then error "Variable name conflict - please choose Variables distinct from any variable name in the ring";
+    Q := if opts.PrimaryGradingIdeal === null then ideal gens ring I else opts.PrimaryGradingIdeal;
+    if minimalPrimes Q != {ideal gens ring I} then error "Expected PrimaryGradingIdeal to be primary to the maximal ideal";
+    if I.cache#?{"Gr_QGr_I",Q} then I.cache#{"Gr_QGr_I",Q} else I.cache#{"Gr_QGr_I",Q} = (
         G1 := normalCone(I, Variable => opts.Variables#1);
-        G2 := minimalPresentation normalCone(sub(ideal gens ring I, G1), Variable => opts.Variables#0);
-        s := #select(gens G2, g -> toString first baseName g == opts.Variables#0);
-        newRing(G2, Degrees => splice({s : {1,0}} | {#gens G2 - s : {0,1}}))
+        G2 := minimalPresentation normalCone(sub(Q, G1), Variable => opts.Variables#0);
+        newVars := apply(opts.Variables, name -> select(gens G2, g -> instance(baseName g, IndexedVariable) and toString first baseName g == name));
+        newRing(G2, Degrees => splice({#newVars#0 : {1,0}} | {#newVars#1 : {0,1}} | {#gens G2 - #flatten newVars : {0,0}}))
     )
 )
 
@@ -138,27 +146,26 @@ hilbertSequence Ideal := HilbertSequence => opts -> I -> hilbertSequence(comodul
 -- hilbertPolynomial Ring := RingElement => o -> R -> hilbertPolynomial(R^1, o)
 
 -- This is the main method. It computes the multiplicity sequence of an ideal using one of two strategies: either bivariate Hilbert series (default), or general elements.
-multiplicitySequence = method(Options => options getGeneralElements ++ options hilbertSequence ++ {Strategy => "grGr"})
+multiplicitySequence = method(Options => options getGeneralElements ++ options hilbertSequence ++ {Strategy => "tangentNormalCone"})
 multiplicitySequence Ideal := HashTable => opts -> I -> (
-    hashTable if opts.Strategy =!= "genElts" then (
-        H := hilbertSequence(grGr I, DoSaturate => opts.DoSaturate);
+    hashTable if opts.Strategy =!= "generalElements" then (
+        H := hilbertSequence(tangentNormalCone I, DoSaturate => opts.DoSaturate);
         d := max(keys H /sum);
         apply(select(keys H, k -> sum k == d), k -> last k => H#k)
     ) else toList apply(codim I..analyticSpread I, j -> {j, multiplicitySequence(j, I, opts)})
 )
 multiplicitySequence (ZZ, Ideal) := ZZ => opts -> (j, I) -> (
-    c := codim I;
-    l := analyticSpread I;
+    (c, l) := (codim I, analyticSpread I);
     if j < c then ( print "Requested index is less than codimension"; return 0; );
     if j > l then ( print "Requested index is greater than analytic spread"; return 0; );
-    if opts.Strategy == "genElts" then (
+    if opts.Strategy == "generalElements" then (
         if not I.cache#?"colonIdeals" then I.cache#"colonIdeals" = new MutableHashTable;
         idealIn21 := if I.cache#"colonIdeals"#?j then I.cache#"colonIdeals"#j else (
-            if not I.cache#?"genElts" or #I.cache#"genElts" < j then I.cache#"genElts" = (
+            if not I.cache#?"generalElements" or #I.cache#"generalElements" < j then I.cache#"generalElements" = (
                 if debugLevel > 0 then print "Finding general elements...";
                 getGeneralElements(I, j, MinTerms => opts.MinTerms)
             );
-            G := I.cache#"genElts";
+            G := I.cache#"generalElements";
             if debugLevel > 0 then print "Finding colon ideal...";
             I.cache#"colonIdeals"#j = saturate(sub(ideal(G_{0..j-2}), ring I), I) + ideal(G#(j-1))
         );
@@ -281,10 +288,11 @@ jMultiplicity MonomialIdeal := ZZ => I -> (
 )
 
 -- Synonyms (pre- v0.8.0)
+grGr = tangentNormalCone
+jMult = jMultiplicity
+monReduction = monomialReduction
+NP = newtonPolyhedron
 -- getGenElts = getGeneralElements
--- jMult = jMultiplicity
--- monReduction = monomialReduction
--- NP = newtonPolyhedron
 -- monAnalyticSpread = monomialAnalyticSpread
 -- monjMult = monomialjMultiplicity
 
@@ -311,7 +319,7 @@ doc ///
             polynomial of $G$, where 
             $G = \operatorname{gr}(\mathfrak{m} \operatorname{gr}(I))$
             is the associated graded ring of the extension of $m$ in the
-            associated graded ring of $I$ (see @TO grGr@).
+            associated graded ring of $I$ (see @TO tangentNormalCone@).
 
             The multiplicity sequence was defined by Achiles and Manaresi in
             intersection theory [AM97]. Its importance comes from applications to
@@ -334,11 +342,11 @@ doc ///
         Text
             One of the terms of the multiplicity sequence is the j-multiplicity,
             another important invariant of an ideal in multiplicity theory.
-            This package also contains a method @TO jMultiplicity@ which computes the 
-            j-multiplicity of an ideal using Theorem 3.6 in [NU10], based on 
-            code written by H. Schenck and J. Validashti, or via polyhedral
-            volume computations if the ideal is monomial, using a result of 
-            [JM13].
+            This package also contains a method @TO jMultiplicity@ which 
+            computes the j-multiplicity of an ideal using Theorem 3.6 in [NU10],
+            based on code written by H. Schenck and J. Validashti, or via
+            polyhedral volume computations if the ideal is monomial, using a
+            result of [JM13].
             The package also includes several functions related to integral
             dependence of monomial ideals, such as Newton polyhedron, analytic
             spread, and monomial reductions.
@@ -358,7 +366,7 @@ doc ///
     	    	"[SH06] Swanson-Huneke, Integral Closure of Ideals, Rings, and Modules, London Mathematical Society Lecture Note Series, vol. 336. Cambridge University Press, Cambridge (2006)."
             }
     Subnodes
-        grGr
+        tangentNormalCone
         hilbertSequence
         multiplicitySequence
         jMultiplicity
@@ -369,13 +377,16 @@ doc ///
 
 doc ///
     Key
-        grGr
-        (grGr, Ideal)
-        [grGr, Variables]
+        tangentNormalCone
+        "grGr"
+        (tangentNormalCone, Ideal)
+        PrimaryGradingIdeal
+        [tangentNormalCone, Variables]
+        [tangentNormalCone, PrimaryGradingIdeal]
     Headline
         the bigraded ring $\operatorname{gr}(\mathfrak{m} \operatorname{gr}(I))$
     Usage
-        grGr(I)
+        tangentNormalCone(I)
     Inputs
         I:Ideal
     Outputs
@@ -392,16 +403,27 @@ doc ///
         Example
             R = QQ[x,y]
             I = ideal"x2,xy"
-            A = grGr I
+            A = tangentNormalCone I
             describe A
             hilbertSeries A
         Text
-            The variable names may be specified with the option Variables, 
-            which should be a list of two strings, with 
+            The variable names may be specified with the option 
+            @TT "Variables"@, which should be a list of two strings, with 
             default value {"u","v"}.
         Example
             J = (ideal gens R)^2
-            grGr(J, Variables => {"s", "t"})
+            tangentNormalCone(J, Variables => {"s", "t"})
+        Text
+            The user may also specify a $\mathfrak{m}$-primary ideal $Q$
+            instead of $\mathfrak{m}$, via the option 
+            @TT "PrimaryGradingIdeal"@, to compute 
+            $\operatorname{gr}(Q \operatorname{gr}(I))$.
+            Note that for general $\mathfrak{m}$-primary $Q$, one is 
+            generally more interested in lengths over $R/Q$, instead of 
+            $R/\mathfrak{m}$-vector space dimensions (as in the
+            Hilbert series).
+        Example
+            tangentNormalCone(I, PrimaryGradingIdeal => J)
     SeeAlso
     	normalCone
 ///
@@ -433,16 +455,15 @@ doc ///
         Text 
             Given a (graded) ideal I, this function computes 
             the multiplicity sequence as defined in [0].
-            Specifying {\tt Strategy => "genElts"} will use the general element
-            method as in [4]: one can specify the "complexity" of the general
-            elements by using the option {\tt MinTerms}.
+            Specifying {\tt Strategy => "generalElements"} will use the general element
+            method as in [4].
         Example
             R = QQ[x,y,z]
             I = ideal"xy2,yz3,zx4"
             multiplicitySequence I
         Text 
-            The j-multiplicity of I is the l-th number,
-            where l is the analytic spread of I.	
+            The @TO2{jMultiplicity, "j-multiplicity"}@ of I is the l-th number,
+            where l is the @TO2{analyticSpread, "analytic spread"}@ of I.	
         Example
             analyticSpread I, jMultiplicity I
         Text
@@ -458,6 +479,56 @@ doc ///
             One can specify a particular element in the multiplicity sequence:
         Example
             multiplicitySequence_1 I
+        Text
+            One can tweak the behavior of the general elements strategy via
+            the options @TT "MinTerms"@ and @TT "NumCandidates"@.
+            @TT "MinTerms"@ controls the minimal number of summands in each 
+            candidate general element (expressed as a linear combination of
+            generators of $I$ - thus a lower value may result in "simpler"
+            elements and quicker computations), and @TT "NumCandidates"@
+            controls the number of attempts to find a general element in each
+            codimension.
+        CannedExample
+            i11 : R = ZZ/2[x_1..x_9];
+            
+            i12 : I = minors(2, genericMatrix(R, 3, 3));
+            
+            i13 : multiplicitySequence (6, I, Strategy => "generalElements", MinTerms => 1)
+            
+            o13 = 12
+            
+            i15 : I.cache#"generalElements"
+
+            o15 = {x x  + x x , x x  + x x , x x  + x x , x x  + x x , x x  + x x  + x x 
+                    5 7    4 8   3 5    2 6   2 7    1 8   6 7    4 9   2 4    3 4    1 5
+                   + x x  + x x  + x x , x x  + x x  + x x  + x x  + x x  + x x }
+                      1 6    3 8    2 9   3 4    1 6    3 7    6 8    1 9    5 9
+            
+            i16 : I = ideal I_*; -- clears cache
+            
+            i17 : multiplicitySequence (6, I, Strategy => "generalElements")
+            
+            o17 = 12
+            
+            i18 : I.cache#"generalElements"
+            
+            o18 = {x x  + x x  + x x  + x x  + x x  + x x  + x x  + x x , x x  + x x  +
+                    3 5    2 6    3 7    6 7    3 8    1 9    2 9    4 9   3 7    6 8
+                   x x  + x x , x x  + x x  + x x  + x x  + x x  + x x  + x x  + x x  +
+                    1 9    5 9   2 4    1 5    3 5    2 6    2 7    3 7    1 8    3 8
+                   x x  + x x , x x  + x x  + x x  + x x , x x  + x x  + x x  + x x  +
+                    1 9    2 9   3 4    1 6    3 7    1 9   2 4    3 4    1 5    1 6
+                   x x  + x x  + x x  + x x  + x x  + x x , x x  + x x  + x x  + x x  +
+                    3 7    6 7    3 8    1 9    2 9    4 9   2 4    3 4    1 5    3 5
+                   x x  + x x  + x x  + x x  + x x  + x x  + x x  + x x }
+                    1 6    2 6    2 7    5 7    1 8    4 8    6 8    5 9
+            
+            i19 : multiplicitySequence (9, I, Strategy => "generalElements", NumCandidates => 1)
+            stdio:72:1:(3): error: Could not find general element. Consider running this function again, e.g. with a higher value of NumCandidates
+            
+            i20 : multiplicitySequence (9, I, Strategy => "generalElements", NumCandidates => 2)
+            
+            o20 = 2
     Caveat
     	There are two conventions in use about the order of the sequence. 
         The current function follows that of [4] and in this setting 
@@ -468,6 +539,8 @@ doc ///
         results.
     SeeAlso
     	jMultiplicity
+        hilbertSequence
+        tangentNormalCone
 ///
 
 doc ///
@@ -494,7 +567,7 @@ doc ///
             Given an $\NN^p$-graded module M, this function computes 
             the coefficients of the pth sum transform of the $\NN^p$-graded 
             Hilbert function of M in its Macaulay expansion. If the input 
-            is an ideal I, then the Hilbert sequence of {\tt comodule I} is 
+            is an ideal I, then the Hilbert sequence of @TO comodule@ $I$ is 
             returned.
             --TODO is the Macaulay expansion defined?
             The output is a @TO HilbertSequence@, which is a type of 
@@ -512,10 +585,11 @@ doc ///
             hilbertSequence I
             hilbertPolynomial I
         Text
-            In the case of a bigraded module (e.g. @TO grGr@ $I$ for an ideal 
-            $I$), the result is displayed as a 2-dimensional table, whose
-            alignment (either center or right) is controlled by the package-wide 
-            Configuration option "AlignCenter" (default value true).
+            In the case of a bigraded module (e.g. @TO tangentNormalCone@ $I$ 
+            for an ideal $I$), the result is displayed as a 2-dimensional table,
+            whose alignment (either center or right) is controlled by the 
+            package-wide Configuration option @TT "AlignCenter"@ 
+            (default value true).
             This is particularly convenient in relation to the 
             @TO2{multiplicitySequence, "multiplicity sequence"}@: namely,
             the multiplicity sequence of I appears as the top row of the table
@@ -525,7 +599,7 @@ doc ///
             R = QQ[x_1..x_9]
             I = minors(2, genericMatrix(R, 3, 3))
             multiplicitySequence I
-            hilbertSequence grGr I
+            hilbertSequence tangentNormalCone I
     Caveat
         In general, to retain a connection to the Hilbert polynomial (as 
         opposed to the pth sum transform) it is necessary to saturate with 
@@ -540,6 +614,7 @@ doc ///
 doc ///
     Key
         jMultiplicity
+        "jMult"
         (jMultiplicity, Ideal)
         (jMultiplicity, MonomialIdeal)
     Headline
@@ -577,6 +652,7 @@ doc ///
 doc ///
     Key
         newtonPolyhedron
+        "NP"
         (newtonPolyhedron, Ideal)
     Headline
         the Newton polyhedron of a monomial ideal
@@ -609,6 +685,7 @@ doc ///
 doc ///
     Key
         monomialReduction
+        "monReduction"
         (monomialReduction, Ideal)
     Headline
         the minimal monomial reduction of a monomial ideal
@@ -626,15 +703,15 @@ doc ///
             which is inclusion-wise minimal among all monomial reductions of I.
         Example
             R = QQ[x,y]
-            I = ideal"x2,xy,y3"
+            I = monomialIdeal"x2,xy,y3"
             J = monomialReduction I
             J == I
             K = minimalReduction I
             degree J, degree K
         Text
-            This function works by finding the extremal rays of newtonPolyhedron(I),
-            which correspond to the minimal generators of the monomial reduction
-            of I.
+            This function works by finding the extremal rays of 
+            newtonPolyhedron(I), which correspond to the minimal generators of
+            the monomial reduction of I.
     Caveat
         As seen above, a monomial minimal reduction need not be a minimal
         reduction.
@@ -674,17 +751,17 @@ doc ///
 TEST /// -- Monomial ideals
 R = QQ[x,y,z]
 I = ideal "x4z, y3z"
-K = ideal grGr I;
+K = ideal tangentNormalCone I;
 S = QQ[a..e]
 J = ideal(a*b^3, b^3*e, a*c^4)
 assert(K == (map(ring K, S, gens ring K)) J)
 assert(multiplicitySequence I === hashTable {(1, 1), (2, 15)})
-assert(multiplicitySequence(I, Strategy => "grGr") === multiplicitySequence(I, Strategy => "genElts"))
+assert(multiplicitySequence(I, Strategy => "tangentNormalCone") === multiplicitySequence(I, Strategy => "generalElements"))
 
 R = QQ[x,y,z,t]
 I = ideal "x3,y4,z5" * ideal "t"
 assert(multiplicitySequence I === hashTable {(1, 1), (2, 3), (3, 72)})
-assert(multiplicitySequence(I, Strategy => "grGr") === multiplicitySequence(I, Strategy => "genElts", MinTerms => 3))
+assert(multiplicitySequence(I, Strategy => "tangentNormalCone") === multiplicitySequence(I, Strategy => "generalElements", MinTerms => 3))
 ///
 
 TEST /// -- Determinantal ideals
@@ -707,7 +784,7 @@ J1 = ideal apply(m,k-> sum(min(m-k,n),i->x_i*y_(k+i)));
 J2 = ideal apply(1..(n-1),k-> sum(min(n-k,m),i->x_(k+i)*y_i));
 J= J1+J2
 assert(isReduction (I,J) and multiplicitySequence J === multiplicitySequence I)
-assert((hilbertSequence grGr I)#{0,3} == -1 and (hilbertSequence grGr J)#{0,3} == -2)
+assert((hilbertSequence tangentNormalCone I)#{0,3} == -1 and (hilbertSequence tangentNormalCone J)#{0,3} == -2)
 ///
 
 TEST /// -- monomial functions
@@ -740,7 +817,7 @@ end--
 -- Old code
 --------------------------------------------------------------------------------------------
 
--- grGr = I -> (
+-- tangentNormalCone = I -> (
     -- R := ring I;
     -- m := ideal vars R;
     -- n := numgens I;
@@ -771,7 +848,7 @@ end--
 
 -- cSubi = method() -- auxiliary method that computes the multiplicity sequence via Hilbert functions
 -- cSubi (ZZ, Ideal) := ZZ => (i,I) -> (
-    -- G := grGr I;
+    -- G := tangentNormalCone I;
     -- if not G.cache#?"hilbertSeries" then G.cache#"hilbertSeries" = hilbertSeries(G, Reduce => true);
     -- hS := G.cache#"hilbertSeries"; -- hilbertS := reduceHilbert hilbertSeries G;
     -- poinP := numerator hS;
@@ -797,9 +874,9 @@ end--
     -- if (c <= 0 or a < 0 or b < 0) then 0 else (sub(c,ZZ) // (a! * b!))
 -- )
 
--- egrGr = method()
--- egrGr Ideal := ZZ => I -> (
-   -- A := grGr I;
+-- etangentNormalCone = method()
+-- etangentNormalCone Ideal := ZZ => I -> (
+   -- A := tangentNormalCone I;
    -- B := newRing (A, Degrees => splice{ (#gens A) : 1});
    -- degree B
 -- )
@@ -874,7 +951,7 @@ jMultiplicity I -- jMultiplicity 3
 
 -- Monomial ideal, not generated in single degree
 R = QQ[x,y,z]
-I = ideal(x^2*y^2, y*z^2, x*z^2, z^3) -- Weird minimal presentation with grGr I
+I = ideal(x^2*y^2, y*z^2, x*z^2, z^3) -- Weird minimal presentation with tangentNormalCone I
 getGeneralElements(I, l, MinTerms => 3)
 
 -- Aug 21, 2020
