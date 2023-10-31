@@ -52,11 +52,9 @@ importFrom("K3Carpets", {"irrelevantIdeal"});
 
 randomSubset = method()
 randomSubset (VisibleList, ZZ) := List => (L, k) -> (
-    if k <= 0 or k > #L then return {};
-    m := min(k, #L-k);
-    idxSet := new MutableHashTable;
-    while #idxSet < m do idxSet#(random(#L)) = 1;
-    L_(if m < k then toList(0..<#L) - set keys idxSet else sort keys idxSet)
+    if k <= 0 or k > #L then return {};    
+    K := random(L); 
+    K_{0..(k-1)}
 )
 
 getGeneralElements = method(Options => {symbol MinTerms => -1, symbol NumCandidates => 3})
